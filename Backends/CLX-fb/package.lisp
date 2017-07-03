@@ -3,7 +3,7 @@
 (in-package :common-lisp-user)
 
 (defpackage :clim-clx-fb
-    (:use :clim :clim-lisp :clim-backend :clim-clx)
+    (:use :clim :clim-lisp :clim-backend :clim-clx :clim-fb)
   (:import-from :climi
                 #:+alt-key+
                 ;;
@@ -62,7 +62,9 @@
 		  #:image-sheet-mixin
 		  #:image-pixmap-mixin
                   #:image-pixels
-		  )
+                  #:image-width
+                  #:image-height
+                  )
    (:import-from :clim-clx
 		 #:CLX-PORT-DISPLAY
 		 #:clx-medium
@@ -77,8 +79,8 @@
 		#:clx-port-window
 		#:sheet-xmirror
 		#:sheet-direct-xmirror
-		)
-  (:import-from :clim-standard
+         	)
+   (:import-from :clim-standard
 		#:standard-handled-event-port-mixin
 		#:standard-single-mirrored-sheet-mixin
 		#:%sheet-mirror-region

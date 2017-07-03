@@ -1,7 +1,6 @@
 (in-package :clim-clx-fb)
 
-(defclass clx-fb-port (standard-handled-event-port-mixin
-		       render-port-mixin
+(defclass clx-fb-port (fb-port
 		       clim-xcommon:keysym-port-mixin
 		       clim-clx::clx-basic-port)
   ())
@@ -29,10 +28,7 @@
   (clim-sys:make-process (lambda ()
                            (loop
                               (handler-case
-                                  (maphash #'(lambda (key val)
-                                               (when (typep key 'clx-fb-mirrored-sheet-mixin)
-                                                 (image-mirror-to-x (sheet-mirror key))))
-                                           (slot-value port 'climi::sheet->mirror))
+                                  (fb-port-flush-mirrors port)
                                 (condition (condition)
                                   (format *debug-io* "~A~%" condition)))
                               (xlib:display-force-output (clx-port-display port))
@@ -47,28 +43,14 @@
 			     :structure-notify
 			     :pointer-motion :button-motion))
 
-(defmethod clim-clx::realize-mirror ((port clx-fb-port) (sheet mirrored-sheet-mixin))
-   (clim-clx::%realize-mirror port sheet)
-   (port-register-mirror (port sheet) sheet (make-instance 'clx-fb-mirror :xmirror (port-lookup-mirror port sheet)))
-   (port-lookup-mirror port sheet))
-
-(defmethod clim-clx::realize-mirror ((port clx-fb-port) (pixmap pixmap))
-  )
-
-(defmethod clim-clx::%realize-mirror ((port clx-fb-port) (sheet basic-sheet))
-  (clim-clx::realize-mirror-aux port sheet
-		      :event-mask *event-mask*
-                      :border-width 0
-                      :map (sheet-enabled-p sheet)))
-
-(defmethod clim-clx::%realize-mirror ((port clx-fb-port) (sheet top-level-sheet-pane))
+(defmethod fb-port-realize-real-mirror ((port clx-fb-port) (sheet top-level-sheet-pane))
   (let ((q (compose-space sheet)))
     (let ((frame (pane-frame sheet))
-          (window (clim-clx::realize-mirror-aux port sheet
+          (window (realize-mirror-aux port sheet
 				      :event-mask *event-mask*
                                       :map nil
                                       :width (clim-clx::round-coordinate (space-requirement-width q))
-                                      :height (clim-clx::round-coordinate (space-requirement-height q)))))           
+                                      :height (clim-clx::round-coordinate (space-requirement-height q)))))
       (setf (xlib:wm-hints window) (xlib:make-wm-hints :input :on))
       (setf (xlib:wm-name window) (frame-pretty-name frame))
       (setf (xlib:wm-icon-name window) (frame-pretty-name frame))
@@ -79,22 +61,24 @@
       (setf (xlib:wm-protocols window) `(:wm_delete_window))
       (xlib:change-property window
                             :WM_CLIENT_LEADER (list (xlib:window-id window))
-                            :WINDOW 32))))
+                            :WINDOW 32)
+      window)))
 
-(defmethod clim-clx::%realize-mirror ((port clx-fb-port) (sheet unmanaged-top-level-sheet-pane))
-  (clim-clx::realize-mirror-aux port sheet
+(defmethod fb-port-realize-real-mirror ((port clx-fb-port) (sheet unmanaged-top-level-sheet-pane))
+ (realize-mirror-aux port sheet
 		      :event-mask *event-mask*
 		      :override-redirect :on
 		      :map nil))
+  
+(defmethod fb-port-realize-mirror ((port clx-fb-port) real-mirror)
+  (make-instance 'clx-fb-mirror :real-mirror real-mirror))
 
-
-
-(defmethod make-medium ((port clx-fb-port) sheet)
-  (make-instance 'clx-fb-medium 
-		 ;; :port port 
-		 ;; :graft (find-graft :port port) 
-		 :sheet sheet))
-
+(defmethod fb-port-realize-pixmap ((port clx-fb-port) sheet width height)
+    (make-instance 'clx-fb-pixmap
+                   :sheet sheet
+                   :width width
+                   :height height
+                   :port port))
 
 (defmethod make-graft ((port clx-fb-port) &key (orientation :default) (units :device))
   (let ((graft (make-instance 'clx-graft
@@ -129,26 +113,75 @@
 
 ;;; Pixmap
 
-(defmethod destroy-mirror ((port clx-fb-port) (pixmap mcclim-render::image-pixmap-mixin))
-  (call-next-method))
 
-(defmethod realize-mirror ((port clx-fb-port) (pixmap mcclim-render::image-pixmap-mixin))
-  (setf (sheet-parent pixmap) (graft port))
-  (let ((mirror (make-instance 'mcclim-render::opticl-rgb-image-mirror-mixin)))
-    (port-register-mirror port pixmap mirror)
-    (mcclim-render::%make-image mirror pixmap)))
-
-(defmethod port-allocate-pixmap ((port clx-fb-port) sheet width height)
-  (let ((pixmap (make-instance 'clx-fb-pixmap
-			       :sheet sheet
-			       :width width
-			       :height height
-			       :port port)))
-    (when (sheet-grafted-p sheet)
-      (realize-mirror port pixmap))
-    pixmap))
-
-(defmethod port-deallocate-pixmap ((port clx-fb-port) pixmap)
-  (when (port-lookup-mirror port pixmap)
-    (destroy-mirror port pixmap)))
-
+(defun realize-mirror-aux (port sheet
+				&key (width 100) (height 100) (x 0) (y 0)
+				(border-width 0) (border 0)
+				(override-redirect :off)
+				(map nil)
+				(backing-store :not-useful)
+                                (save-under :off)
+				(event-mask `(:exposure 
+					      :key-press :key-release
+					      :button-press :button-release
+					      :enter-window :leave-window
+					      :structure-notify
+					      :pointer-motion
+					      :button-motion)))
+  (declare (ignore border-width))
+  (when (null (port-lookup-mirror port sheet))
+    ;;(update-mirror-geometry sheet (%%sheet-native-transformation sheet))
+    (let* ((desired-color (typecase sheet
+                            (permanent-medium-sheet-output-mixin ;; sheet-with-medium-mixin
+                              (medium-background sheet))
+                            (basic-pane ; CHECKME [is this sensible?] seems to be
+                              (let ((background (pane-background sheet)))
+                                (if (typep background 'color)
+                                    background
+                                    +white+)))
+                            (t
+                              +white+)))
+           (color (multiple-value-bind (r g b)
+                      (color-rgb desired-color)
+                    (xlib:make-color :red r :green g :blue b)))
+	   (screen (clx-port-screen port))
+           (pixel (xlib:alloc-color (xlib:screen-default-colormap screen) color))
+	   (mirror-region (%sheet-mirror-region sheet))
+	   (mirror-transformation (%sheet-mirror-transformation sheet))
+           (window (xlib:create-window
+                    :parent (sheet-xmirror (sheet-parent sheet))
+                    :width (if mirror-region
+                               (round-coordinate (bounding-rectangle-width mirror-region))
+                               width)
+                    :height (if mirror-region
+				(round-coordinate (bounding-rectangle-height mirror-region))
+				height)
+                    :x (if mirror-transformation
+			   (round-coordinate (nth-value 0 (transform-position
+							   mirror-transformation
+							   0 0)))
+			   x)
+                    :y (if mirror-transformation
+                           (round-coordinate (nth-value 1 (transform-position
+                                                           mirror-transformation
+                                                           0 0)))
+                           y)
+                    :border-width 0 ;;border-width
+                    :border border
+                    :override-redirect override-redirect
+                    :backing-store backing-store
+                    :save-under save-under
+                    :gravity :north-west
+                    ;; Evil Hack -- but helps enormously (Has anybody
+                    ;; a good idea how to sneak the concept of
+                    ;; bit-gravity into CLIM)? --GB
+                    :bit-gravity (if (typep sheet 'climi::extended-output-stream)
+                                     :north-west
+                                     :forget)
+                    :background pixel
+                    :event-mask (apply #'xlib:make-event-mask
+                                       event-mask))))
+      (port-register-mirror (port sheet) sheet window)
+      (when map
+        (xlib:map-window window))
+      window)))

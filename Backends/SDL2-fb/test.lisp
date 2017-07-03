@@ -1,13 +1,9 @@
 
 (ql:quickload :mcclim)
-(ql:quickload :mcclim-clx-fb)
-
-(setf clim:*default-server-path*  (list :clx-fb :host ""
-					:protocol :unix
-					:display-id 0))
-
-
+(ql:quickload :mcclim-sdl2)
+(setf clim:*default-server-path*  (list :sdl2))
 (ql:quickload :clim-examples)
+
 ;;(CLIM-DEMO:DEMODEMO)
 
 #|

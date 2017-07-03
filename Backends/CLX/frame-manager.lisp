@@ -169,16 +169,17 @@
     (declare (ignore w h))
     (let ((q (compose-space pane)))
       (let ((mirror (sheet-direct-xmirror pane)))
-        (setf (xlib:wm-normal-hints mirror)
-              (xlib:make-wm-size-hints
-               :user-specified-position-p (and x y)
-               :x x :y y
-               :width  (round (space-requirement-width q))
-               :height (round (space-requirement-height q))
-               :max-width (min 65535 (round (space-requirement-max-width q)))
-               :max-height (min 65535 (round (space-requirement-max-height q)))
-               :min-width (round (space-requirement-min-width q))
-               :min-height (round (space-requirement-min-height q))))))))
+        (when mirror
+          (setf (xlib:wm-normal-hints mirror)
+                (xlib:make-wm-size-hints
+                 :user-specified-position-p (and x y)
+                 :x x :y y
+                 :width  (round (space-requirement-width q))
+                 :height (round (space-requirement-height q))
+                 :max-width (min 65535 (round (space-requirement-max-width q)))
+                 :max-height (min 65535 (round (space-requirement-max-height q)))
+                 :min-width (round (space-requirement-min-width q))
+                 :min-height (round (space-requirement-min-height q)))))))))
 
 (defmethod tell-window-manager-about-space-requirements ((pane t))
   ;; hmm

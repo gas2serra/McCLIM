@@ -333,6 +333,7 @@
 
 ;; this is evil.
 (defmethod allocate-space :after ((pane top-level-sheet-pane) width height)
+  (format *debug-io* "WM ...~%")
   (when (sheet-direct-xmirror pane)
     (with-slots (space-requirement) pane
       '(setf (xlib:wm-normal-hints (sheet-direct-xmirror pane))
