@@ -38,17 +38,10 @@
 	 (return)
 	 (lparallel.queue:pop-queue queue))))
 
-(defun close-sdl2-server ()
-  (when *sdl2-server*
-    (<+ `(sdl2:quit))
-    (bt:destroy-thread *sdl2-server*)
-    (setf *sdl2-server* nil)
-    (empty-queue *sdl2-server-command-queue*)
-    (empty-queue *sdl2-server-event-queue*)))
 
-(defun restart-sdl2-server ()
+(defun restart-sdl2-server (port)
   (close-sdl2-server)
-  (start-sdl2-server))
+  (start-sdl2-server port))
 
 (defun sdl2-server-loop (port)
   ;;(sdl2:init :everything)
@@ -140,7 +133,7 @@
 
 (defun close-sdl2-server ()
   (when *sdl2-server*
-    (<+ `(sdl2:sdl-quit))
+    (<+ `(sdl2:quit))
     (bt:destroy-thread *sdl2-server*)
     (setf *sdl2-server* nil)
     (empty-queue *sdl2-server-command-queue*)

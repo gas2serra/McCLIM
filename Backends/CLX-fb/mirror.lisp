@@ -15,6 +15,13 @@
 ;;;
 ;;;
 
+(declaim (inline xlib-image-data-set-pixel))
+(defun xlib-image-data-set-pixel (data x y red green blue alpha)
+  (setf (aref data y x)
+       (dpb blue (byte 8 0)
+            (dpb green (byte 8 8)
+                 (dpb red (byte 8 16)
+                      (dpb alpha (byte 8 24) 0))))))
 
 
 ;;;

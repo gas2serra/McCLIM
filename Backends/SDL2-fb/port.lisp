@@ -18,34 +18,7 @@
    (window->sheet :initform (make-hash-table))
    (window->win :initform (make-hash-table))
    (pointer :reader port-pointer)))
-   
-(defclass sdl2-basic-pointer (standard-pointer)
-  ((cursor :accessor pointer-cursor :initform :upper-left)))
 
-(defmethod synthesize-pointer-motion-event ((pointer sdl2-basic-pointer))
-  #|
-  (let* ((port (port pointer))
-	 (sheet (port-pointer-sheet port)))
-    (when sheet
-      (let ((mirror (sheet-direct-xmirror sheet)))
-	(when mirror
-	  (multiple-value-bind (x y same-screen-p child mask root-x root-y)
-	      (xlib:query-pointer mirror)
-	    (declare (ignore child))
-	    (when same-screen-p
-	      (make-instance
-	       'pointer-motion-event
-	       :pointer 0 :button (button-from-state mask)
-	       :x x :y y
-	       :graft-x root-x
-	       :graft-y root-y
-	       :sheet sheet
-	       :modifier-state (clim-xcommon:x-event-state-modifiers port mask)
-	       ;; The event initialization code will give us a
-	       ;; reasonable timestamp.
-	       :timestamp 0))))))))
-  |#
-  )
 
 (defgeneric initialize-sdl2 (port))
 
@@ -54,7 +27,7 @@
   (setf (slot-value port 'id) (gensym "SDL2-PORT-"))
   (push (make-instance 'sdl2-fb-frame-manager :port port)
 	(slot-value port 'frame-managers))
-  (setf (slot-value port 'pointer) (make-instance 'sdl2-basic-pointer))
+  (setf (slot-value port 'pointer) (make-instance 'sdl2-pointer))
   (initialize-sdl2 port))
 
 (defmethod print-object ((object sdl2-port) stream)
@@ -91,6 +64,18 @@
       (port-register-mirror (port sheet) sheet win)
       win)))
 
+(defmethod fb-port-realize-real-mirror ((port sdl2-port)
+                                        (sheet unmanaged-top-level-sheet-pane))
+  (let* ((frame (pane-frame sheet))
+         (win (realize-mirror-aux port sheet
+                                  :flags '(:SKIP-TASKBAR :BORDERLESS)
+                                  :title (frame-pretty-name frame))))
+    (with-slots (mirror->window) port
+      (setf (gethash win mirror->window) win)
+      (format *debug-io* "REALIZE UN: ~A ~A~%" win win)
+      (port-register-mirror (port sheet) sheet win)
+      win)))
+
 (defmethod fb-port-realize-mirror ((port sdl2-port)
                                    real-mirror)
   (let ((mirror (make-instance 'sdl2-fb-mirror :port port
@@ -100,14 +85,15 @@
       (setf (gethash mirror mirror->window) real-mirror))
     mirror))
 
-(defparameter *flags* '(:resizable :HIDDEN ))
+(defparameter *flags* '(:resizable :HIDDEN))
 
-(defun realize-mirror-aux (port sheet &key (width 200) (height 200) (x 0) (y 0) (title ""))
+(defun realize-mirror-aux (port sheet &key (flags *flags*) (width 200) (height 200) (x 0) (y 0) (title ""))
   (let ((mirror-region (%sheet-mirror-region sheet))
 	(mirror-transformation (%sheet-mirror-transformation sheet)))
-    (let ((window-flags (sdl2::mask-apply 'sdl2::sdl-window-flags *flags*))
+    (let ((window-flags (sdl2::mask-apply 'sdl2::sdl-window-flags flags))
 	  (x (sdl2::windowpos-from-coord x))
 	  (y (sdl2::windowpos-from-coord y)))
+      (format *debug-io* "WINDOW FLAGS: ~A~%" window-flags)
     (let ((win (<+ 
 		`(sdl2::sdl-create-window ,title
 					  ,(if mirror-transformation
@@ -344,17 +330,6 @@
 (defmethod graft ((port sdl2-port))
   (first (climi::port-grafts port)))
 
-(defmethod port-allocate-pixmap ((port sdl2-port) sheet width height)
-  (declare (ignore sheet width height))
-  ;; fixme: this isn't actually good enough; it leads to errors in
-  ;; with-output-to-pixmap
-  nil)
-
-(defmethod port-deallocate-pixmap ((port sdl2-port) pixmap)
-  #+nil
-  (when (port-lookup-mirror port pixmap)
-    (destroy-mirror port pixmap)))
-
 (defun %destroy-all-mirrors (port)
   (maphash #'(lambda (key val)
 	       (port-unregister-mirror port key val)
@@ -515,3 +490,36 @@
     (value (port sdl2-port) (sheet mirrored-sheet-mixin))
   value)
 |#
+
+
+(defmethod synthesize-pointer-motion-event ((pointer sdl2-pointer))
+  #|
+  (let* ((port (port pointer))
+	 (sheet (port-pointer-sheet port)))
+    (when sheet
+      (let ((mirror (sheet-direct-xmirror sheet)))
+	(when mirror
+	  (multiple-value-bind (x y same-screen-p child mask root-x root-y)
+	      (xlib:query-pointer mirror)
+	    (declare (ignore child))
+	    (when same-screen-p
+	      (make-instance
+	       'pointer-motion-event
+	       :pointer 0 :button (button-from-state mask)
+	       :x x :y y
+	       :graft-x root-x
+	       :graft-y root-y
+	       :sheet sheet
+	       :modifier-state (clim-xcommon:x-event-state-modifiers port mask)
+	       ;; The event initialization code will give us a
+	       ;; reasonable timestamp.
+	       :timestamp 0))))))))
+  |#
+  )
+
+(defmethod fb-port-realize-pixmap ((port sdl2-port) sheet width height)
+  (make-instance 'fb-pixmap
+                 :sheet sheet
+                 :width width
+                 :height height
+                 :port port))

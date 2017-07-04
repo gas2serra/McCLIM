@@ -13,6 +13,7 @@
 		#:port-register-mirror
 		#:port-unregister-mirror
 		#:top-level-sheet-pane
+                #:unmanaged-top-level-sheet-pane
 		#:window-destroy-event
 		#:port-set-mirror-region
                 #:port-pointer
