@@ -14,7 +14,7 @@
 	    (,exit-fn (sheet stream)
               (declare (ignorable stream))
 	      (mcclim-render::write-image (image-mirror-image (sheet-mirror sheet)) ,stream
-                           :type ,format))
+                           :format ,format))
 	    (,enter-fn (sheet stream)
 	      (declare (ignore sheet stream))
 	      nil))
@@ -36,7 +36,7 @@
 	      (,exit-fn (sheet stream)
 		(declare (ignore stream))
 		(mcclim-render::write-image (image-mirror-image (sheet-mirror sheet) ,file
-                                                :type (extract-format ,file))))
+                                                :format (extract-format ,file))))
 	      (,enter-fn (sheet stream)
 		(declare (ignore sheet stream))
 		nil))

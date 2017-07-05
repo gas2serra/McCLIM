@@ -26,6 +26,7 @@
    #:make-get-rgba-octets-code
    #:make-set-rgba-octets-code
    #:read-image
+   #:write-image
    #:image-format-supported-p
    ;; image ops
    #:make-map-rgb-color

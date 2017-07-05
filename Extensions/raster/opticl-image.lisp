@@ -136,3 +136,22 @@
 (define-opticl-image-file-reader :pgm)
 (define-opticl-image-file-reader :ppm)
 (define-opticl-image-file-reader :gif)
+
+(defmacro define-opticl-image-file-writer (format fn)
+  `(define-image-file-writer ,format (image destination)
+     (declare (ignore quality))
+     (let ((img (coerce-image image 'opticl-rgb-image)))
+       (if ,fn
+           (if (streamp destination)
+               (funcall ,fn destination (image-pixels img))
+               (opticl:write-image-file destination (image-pixels img)))
+           (error "Cannot write image to: ~S" destination)))))
+
+(define-opticl-image-file-writer :tiff #'opticl:write-tiff-stream)
+(define-opticl-image-file-writer :tif #'opticl:write-tiff-stream)
+(define-opticl-image-file-writer :jpeg #'opticl:write-jpeg-stream)
+(define-opticl-image-file-writer :jpg #'opticl:write-jpeg-stream)
+(define-opticl-image-file-writer :png #'opticl:write-png-stream)
+(define-opticl-image-file-writer :pbm #'opticl:write-pbm-stream)
+(define-opticl-image-file-writer :pgm #'opticl:write-pgm-stream)
+(define-opticl-image-file-writer :gif #'opticl:write-gif-stream)

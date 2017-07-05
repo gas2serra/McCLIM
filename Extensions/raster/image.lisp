@@ -56,6 +56,7 @@
 ;;;
 
 (defgeneric read-image (source &key format))
+(defgeneric write-image (image destination &key format quality))
 
 (defvar *image-file-readers* (make-hash-table :test 'equalp)
   "A hash table mapping keyword symbols naming image
@@ -63,12 +64,18 @@ formats to a function that can read an image of that format. The
 functions will be called with one argument, the pathname of the
 file to be read.")
 
+(defvar *image-file-writer* (make-hash-table :test 'equalp)
+  "A hash table mapping keyword symbols naming image
+formats to a function that can write an image of that format. The
+functions will be called with two arguments, the image and the pathname of the
+file to be read.")
+
 (defmacro define-image-file-reader (format (&rest args) &body body)
   `(setf (gethash ,format *image-file-readers*)
          #'(lambda (,@args)
              ,@body)))
 
-(defun image-format-supported-p (format)
+(defun image-format-read-supported-p (format)
   "Return true if FORMAT is supported by `read-image'."
   (not (null (gethash format *image-file-readers*))))
 
@@ -77,9 +84,28 @@ file to be read.")
     (setf format (intern (string-upcase
                           (pathname-type (pathname pathname)))
                          (find-package :keyword))))
-  (if (image-format-supported-p format)
+  (if (image-format-read-supported-p format)
       (funcall (gethash format *image-file-readers*)
                pathname)
+      (error "image format not supproted, yet")))
+
+(defmacro define-image-file-writer (format (&rest args) &body body)
+  `(setf (gethash ,format *image-file-writer*)
+         #'(lambda (,@args)
+             ,@body)))
+
+(defun image-format-write-supported-p (format)
+  "Return true if FORMAT is supported by `read-image'."
+  (not (null (gethash format *image-file-writer*))))
+
+(defmethod write-image (image destination &key format quality)
+  (unless format
+    (setf format (intern (string-upcase
+                          (pathname-type (pathname pathname)))
+                         (find-package :keyword))))
+  (if (image-format-write-supported-p format)
+      (funcall (gethash format *image-file-writer*)
+               image destination)
       (error "image format not supproted, yet")))
 
 ;;;

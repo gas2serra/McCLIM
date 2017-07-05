@@ -5,8 +5,6 @@
 
 (defgeneric coerce-image (image image-class))
 
-(defgeneric write-image (image destination &key type quality))
-
 ;;;
 ;;; copy functions
 ;;;
