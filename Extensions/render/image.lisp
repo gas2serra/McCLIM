@@ -3,21 +3,6 @@
 (defclass stencil-image-mixin ()
   ())
 
-;;;
-;;; Image Design
-;;;
-(defclass image-design (design)
-  ((image :reader image
-          :initarg :image)))
-
-(defun make-image-design (image)
-  (make-instance 'image-design :image image))
-
-(defmethod clim:draw-design
-    (medium (design image-design) &rest options
-     &key (x 0) (y 0) &allow-other-keys)
-  (climi::with-medium-options (medium options)
-    (medium-draw-image* medium design x y)))
 
 (defgeneric make-get-rgba-octets-code (image-class pixels-var x-var y-var))
 (defgeneric make-set-rgba-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))

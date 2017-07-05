@@ -31,6 +31,22 @@
 (clim-internals::def-graphic-op draw-image* (image x y))
 
 ;;;
+;;; Image Design
+;;;
+(defclass image-design (design)
+  ((image :reader image
+          :initarg :image)))
+
+(defun make-image-design (image)
+  (make-instance 'image-design :image image))
+
+(defmethod clim:draw-design
+    (medium (design image-design) &rest options
+     &key (x 0) (y 0) &allow-other-keys)
+  (climi::with-medium-options (medium options)
+    (medium-draw-image* medium (slot-value design 'image) x y)))
+
+;;;
 ;;; Basic Image
 ;;;
 (defclass basic-image (image)

@@ -18,6 +18,8 @@
    #:map-rgb-color
    #:draw-image*
    #:medium-draw-image*
+   #:image-design
+   #:make-image-design
    #:basic-image
    #:image-pixels
    #:image-pixels-type
@@ -25,11 +27,12 @@
    #:make-set-rgb-octets-code
    #:make-get-rgba-octets-code
    #:make-set-rgba-octets-code
-   #:read-image
-   #:write-image
-   #:image-format-supported-p
    ;; image ops
    #:make-map-rgb-color
+   #:read-image
+   #:write-image
+   #:image-format-read-supported-p
+   #:image-format-write-supported-p
    #:coerce-image
    #:clone-image
    #:copy-image

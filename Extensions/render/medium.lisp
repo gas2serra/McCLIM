@@ -365,7 +365,9 @@
                (sheet-native-transformation to-sheet)
                to-x to-y)
             (%medium-draw-image medium
-                                (coerce-image image 'rgb-image)
+                                (if (typep image 'image)
+                                    image
+                                    (coerce-image image 'rgb-image))
                                 (+ 0 (- min-x x1))
                                 (+ 0 (- min-y y1))
                                 (- max-x min-x)
@@ -402,7 +404,9 @@
                 (sheet-device-transformation (medium-sheet medium));;)
                to-x to-y)
             (%medium-draw-image medium
-                                (coerce-image image 'rgb-image)
+                                (if (typep image 'image)
+                                    image
+                                    (coerce-image image 'rgb-image))
                                 (+ 0 (- min-x x1))
                                 (+ 0 (- min-y y1))
                                 (- max-x min-x)

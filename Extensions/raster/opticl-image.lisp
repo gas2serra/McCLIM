@@ -96,6 +96,8 @@
 
 (make-map-rgb-color opticl-rgba-image)
 (make-copy-image opticl-rgba-image opticl-rgba-image)
+(make-copy-image opticl-rgba-image opticl-rgb-image)
+(make-copy-image opticl-rgba-image rgb-image)
 
 ;;;
 ;;; I/O
@@ -127,10 +129,10 @@
                                            pixels
                                            (opticl:coerce-image pixels 'opticl:8-bit-rgb-image)))))))))
 
-
 (define-opticl-image-file-reader :tiff)
 (define-opticl-image-file-reader :tif)
 (define-opticl-image-file-reader :jpeg)
+(define-opticl-image-file-reader :jpg)
 (define-opticl-image-file-reader :png)
 (define-opticl-image-file-reader :pbm)
 (define-opticl-image-file-reader :pgm)
