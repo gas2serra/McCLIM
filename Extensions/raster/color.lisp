@@ -61,3 +61,15 @@
    (%byte-blend-value g.fg g.bg a.fg a.bg)
    (%byte-blend-value b.fg b.bg a.fg a.bg)
    (%prelerp a.fg a.bg a.bg)))
+
+;;;
+;;; conversion
+;;;
+
+(defgeneric color->octets (color)
+  (:method ((color standard-color))
+    (multiple-value-bind (r g b)
+        (climi::color-rgb color)
+      (values (color-value->octet r)
+              (color-value->octet g)
+              (color-value->octet b)))))

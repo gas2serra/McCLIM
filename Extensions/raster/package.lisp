@@ -1,6 +1,15 @@
 (defpackage :mcclim-raster
   (:nicknames #:clim-image)
   (:use #:clim #:clim-lisp)
+  (:import-from :climi
+                #:standard-color
+                #:def-grecording
+                #:defmethod*
+                #:output-record-position
+                #:defrecord-predicate
+                #:with-standard-rectangle*
+                #:coordinate=
+                #:if-supplied)
   (:export
    ;; colors
    #:octet
@@ -9,6 +18,7 @@
    #:color-octet-xor
    #:octet-mult
    #:octet-blend-function
+   #:color->octets
    ;; image
    #:image
    #:image-width
