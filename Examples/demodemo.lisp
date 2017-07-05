@@ -96,6 +96,7 @@
                    (make-demo-button "Border Styles Test" 'bordered-output)
                    (make-demo-button "Misc. Tests" 'misc-tests)
 		   (make-demo-button "Drawing Tests" 'drawing-tests)
+                   (make-demo-button "Raster Image Tests" 'raster-image-tests)
                    (make-demo-button "Accepting Values Test"  'av-test)))))))))
 
 (defun demodemo ()

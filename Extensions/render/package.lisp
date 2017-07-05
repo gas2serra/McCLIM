@@ -1,7 +1,7 @@
 (in-package :common-lisp-user)
 
 (defpackage :mcclim-render
-    (:use :clim :clim-lisp :clim-backend)
+    (:use :clim :clim-lisp :clim-backend :clim-image)
     (:import-from :climi
 		  #:with-transformed-position
 		  #:with-transformed-positions
@@ -72,16 +72,11 @@
 		  #:zpb-ttf-font-units->pixels
 		  )
     (:import-from :mcclim-image
-                  #:image
-                  #:image-width
-                  #:image-height
                   #:data
                   #:rgb-pattern
-                  #:rgb-image
                   #:rgb-image-design
                   #:image-data
                   #:medium-draw-image-design*)
     (:export
-     #:%image-paixels
      ))
 

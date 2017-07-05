@@ -304,7 +304,7 @@
 			 (funcall back-fn x y)
 		         (multiple-value-bind (red green blue alpha)
 			     (octet-blend-function
-			      r1 g1 b1 a1 r2 g2 b2 a2)
+			      r2 g2 b2 a2 r1 g1 b1 a1)
 			   (values red green blue alpha))))))))
   (:method ((fore pixeled-uniform-design) (back pixeled-uniform-design))
     (multiple-value-bind (red green blue alpha)

@@ -1,10 +1,9 @@
 
 (defsystem #:mcclim-render/image
-    :depends-on (#:clim-basic #:mcclim-fonts/truetype #:opticl #:mcclim-image)
+    :depends-on (#:clim-basic #:mcclim-fonts/truetype #:opticl #:mcclim-image #:mcclim-raster)
     :serial t
     :components
     ((:file "package")
-     (:file "color")
      (:file "image")
      (:file "pixeled-design")
      (:file "image-ops")
@@ -12,7 +11,8 @@
      (:file "vectors-image-ops")
      (:file "2d-image")
      (:file "opticl-image")
-     (:file "recording")))
+     ;;(:file "recording")
+     ))
 
 (defsystem #:mcclim-render
     :depends-on (#:mcclim-render/image)
@@ -37,4 +37,4 @@
     :depends-on (#:mcclim-render/backend)
     :serial t
     :components
-    ((:file "clx-extension")))
+    ())

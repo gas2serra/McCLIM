@@ -1,50 +1,18 @@
 (in-package :mcclim-render)
 
-;;;
-;;; Opticl
-;;;
-(defclass opticl-image (basic-image drawable-image)
-  ())
+
 
 ;;;
 ;;; Opticl RGB
 ;;;
-(deftype opticl-rgb-image-data () 'opticl-core:8-bit-rgba-image)
 
-(defclass opticl-rgb-image (opticl-image rgb-image-mixin)
-  ((pixels :type (or null opticl-rgb-image-data))))
-
-(defmethod initialize-instance :after ((image opticl-rgb-image)
-                                       &key)
-  (with-slots (width height)
-      image
-    (when (and width height (not (slot-boundp image 'pixels)))
-      (setf (slot-value image 'pixels)
-            (opticl:make-8-bit-rgba-image height width :initial-element 255)))))
-
-(defun make-opticl-rgb-image (width height)
-  (make-instance 'opticl-rgb-image
-                 :width width
-                 :height height))
-
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (defmethod image-pixels-type ((image-class (eql 'opticl-rgb-image)))
-    'opticl-rgb-image-data)
-
-  (defmethod make-get-rgba-octets-code ((image-class (eql 'opticl-rgb-image)) pixels-var x-var y-var)
-    `(the (values octet octet octet octet) (opticl:pixel ,pixels-var ,y-var ,x-var)))
-
-  (defmethod make-set-rgba-octets-code ((image-class (eql 'opticl-rgb-image)) pixels-var x-var y-var red-var green-var blue-var alpha-var)
-    `(setf (opticl:pixel ,pixels-var ,y-var ,x-var) (values ,red-var ,green-var ,blue-var ,alpha-var))))
-
-;;;
 ;;; Opticl Stencil
 
 ;;;
 (deftype opticl-stencil-image-data () 'opticl-core:8-bit-gray-image)
 
 (defclass opticl-stencil-image (opticl-image stencil-image-mixin)
-  ((pixels :type (or null opticl-stencil-image-data))))
+  ((clim-image::pixels :type (or null opticl-stencil-image-data))))
 
 (defun make-opticl-stencil-image (width height)
   (let ((data (opticl:make-8-bit-gray-image height width :initial-element 0)))
@@ -69,7 +37,7 @@
 
 (defmethod  make-pixeled-image-rgba-octets-fn ((image opticl-rgb-image) dx dy region)
   (let ((data (image-pixels image)))
-    (declare (type opticl-rgb-image-data data))
+    (declare (type opticl-rgb-image-pixels data))
     (if (image-alpha-p image)
         (lambda (x y)
           (declare (type fixnum x y))
@@ -89,7 +57,7 @@
 
 (defmethod  make-pixeled-image-rgba-octets-unsafe-fn ((image opticl-rgb-image) dx dy region)
   (let ((data (image-pixels image)))
-    (declare (type opticl-rgb-image-data data))
+    (declare (type opticl-rgb-image-pixels data))
     (if (image-alpha-p image)
         (lambda (x y)
           (declare (type fixnum x y))
@@ -125,10 +93,9 @@
 ;;; Operations
 ;;;
 
-(make-map-rgb-color opticl-rgb-image)
-(make-copy-image opticl-rgb-image opticl-rgb-image)
-(make-copy-image opticl-rgb-image 2d-rgb-image)
-(make-copy-image 2d-rgb-image opticl-rgb-image)
+;;(make-copy-image opticl-rgb-image opticl-rgb-image)
+;;(make-copy-image opticl-rgb-image rgb-image)
+;;(make-copy-image rgb-image opticl-rgb-image)
 (make-fill-image-with-stencil opticl-rgb-image opticl-stencil-image)
 (make-fill-image-without-stencil opticl-rgb-image)
 
@@ -166,7 +133,7 @@
             (opticl:write-image-file destination (image-pixels image)))
         (error "Cannot write image to: ~S" destination))))
 
-(defmethod write-image ((image 2d-rgb-image) destination &key (type :pnm) (quality 1.0))
+(defmethod write-image ((image rgb-image) destination &key (type :pnm) (quality 1.0))
   (write-image (coerce-image image 'opticl-rgb-image)
                destination
                :type type

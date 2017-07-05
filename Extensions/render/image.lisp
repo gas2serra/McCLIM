@@ -1,43 +1,7 @@
 (in-package :mcclim-render)
 
-;;;
-;;; Image
-;;;
-(defclass image ()
-  ((width :initform 0 :initarg :width :accessor image-width :type fixnum)
-   (height :initform 0 :initarg :height :accessor image-height :type fixnum)
-   (alpha-p :initform nil :initarg :alpha-p :accessor image-alpha-p)))
-
-
 (defclass stencil-image-mixin ()
   ())
-
-(defclass rgb-image-mixin ()
-  ())
-
-;;;
-;;; Drawable Image
-;;;
-(defclass drawable-image (image)
-  ())
-
-(defgeneric map-rgb-color (drawable-image fn))
-(defgeneric draw-image (sheet image &rest args
-                        &key clipping-region transformation))
-(defgeneric medium-draw-image* (medium image x y))
-
-;;;
-;;; Basic Image
-;;;
-(defclass basic-image (image)
-  ((pixels :initarg :pixels
-           :accessor image-pixels)))
-
-(defgeneric image-pixels-type (image-class))
-(defgeneric make-get-rgba-octets-code (image-class pixels-var x-var y-var))
-(defgeneric make-set-rgba-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))
-(defgeneric make-get-alpha-octets-code (image-class pixels-var x-var y-var))
-(defgeneric make-set-alpha-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))
 
 ;;;
 ;;; Image Design
@@ -54,6 +18,11 @@
      &key (x 0) (y 0) &allow-other-keys)
   (climi::with-medium-options (medium options)
     (medium-draw-image* medium design x y)))
+
+(defgeneric make-get-rgba-octets-code (image-class pixels-var x-var y-var))
+(defgeneric make-set-rgba-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))
+(defgeneric make-get-alpha-octets-code (image-class pixels-var x-var y-var))
+(defgeneric make-set-alpha-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))
 
 ;;;
 ;;; Image Pattern

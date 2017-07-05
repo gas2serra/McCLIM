@@ -1,4 +1,4 @@
-(in-package :mcclim-render)
+(in-package :mcclim-raster)
 
 (use-package :clim-clx)
 
@@ -8,11 +8,11 @@
     ((medium sheet-with-medium-mixin) design x y)
   (medium-draw-image* (sheet-medium medium) design x y))
 
-(defmethod mcclim-render::medium-draw-image*
-    ((medium clim-clx::clx-medium) (image mcclim-render::drawable-image) x y)
+(defmethod medium-draw-image*
+    ((medium clim-clx::clx-medium) (image drawable-image) x y)
   (let* ((da (clim-clx::sheet-xmirror (medium-sheet medium)))
-	 (width (mcclim-render::image-width image))
-	 (height (mcclim-render::image-height image)))
+	 (width (image-width image))
+	 (height (image-height image)))
     (let ((pixmap (compute-rgb-image-pixmap da image)))
       (multiple-value-bind (x y)
 	  (transform-position
@@ -26,8 +26,8 @@
       (xlib:free-pixmap pixmap))))
 
 (defun compute-rgb-image-pixmap (drawable image)
-  (let* ((width (mcclim-image:image-width image))
-         (height (mcclim-image:image-height image))
+  (let* ((width (mcclim-render::image-width image))
+         (height (mcclim-render::image-height image))
          (depth (xlib:drawable-depth drawable))
          (im (image-to-ximage-for-drawable drawable image)))
     (setf width (max width 1))
@@ -51,8 +51,8 @@
 		   (pixel-translator (xlib:window-colormap drawable))))
 
 (defun image-to-ximage (image depth translator)
-  (let* ((width (mcclim-image:image-width image))
-         (height (mcclim-image:image-height image))
+  (let* ((width (mcclim-render::image-width image))
+         (height (mcclim-render::image-height image))
 	 ;; FIXME: this (and the :BITS-PER-PIXEL, below) is a hack on
 	 ;; top of a hack.  At some point in the past, XFree86 and/or
 	 ;; X.org decided that they would no longer support pixmaps

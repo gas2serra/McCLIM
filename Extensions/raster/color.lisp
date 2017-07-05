@@ -1,9 +1,7 @@
-(in-package :mcclim-render)
-
-(declaim (optimize speed))
+(in-package :mcclim-raster)
 
 ;;;
-;;; color utility functions
+;;; color's utility functions
 ;;;
 
 (deftype octet ()
@@ -31,7 +29,7 @@
     (logand #xFF (ash (+ (ash temp -8) temp) -8))))
 
 ;;;
-;;; blend functions
+;;; blend function
 ;;;
 
 (declaim (inline %lerp)
@@ -57,7 +55,7 @@
 	 (ftype (function (octet octet octet octet octet octet octet octet)
 			  (values octet octet octet octet))
 		octet-blend-function))
-(defun octet-blend-function (r.bg g.bg b.bg a.bg r.fg g.fg b.fg a.fg)
+(defun octet-blend-function (r.fg g.fg b.fg a.fg r.bg g.bg b.bg a.bg)
   (values
    (%byte-blend-value r.fg r.bg a.fg a.bg)
    (%byte-blend-value g.fg g.bg a.fg a.bg)

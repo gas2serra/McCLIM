@@ -348,9 +348,9 @@
 
 (defmethod medium-draw-image-design* ((medium render-medium-mixin)
 				      (design rgb-image-design) to-x to-y)
-  (let* ((image (slot-value design 'image))
-	 (width (image-width image))
-	 (height (image-height image))
+  (let* ((image (slot-value design 'mcclim-image::image))
+	 (width (mcclim-image::image-width image))
+	 (height (mcclim-image::image-height image))
 	 (to-sheet (medium-sheet medium))
          (region
           (region-intersection
@@ -365,7 +365,7 @@
                (sheet-native-transformation to-sheet)
                to-x to-y)
             (%medium-draw-image medium
-                                (coerce-image image '2d-rgb-image)
+                                (coerce-image image 'rgb-image)
                                 (+ 0 (- min-x x1))
                                 (+ 0 (- min-y y1))
                                 (- max-x min-x)
@@ -388,17 +388,21 @@
          (region
           (region-intersection
            (climi::medium-device-region medium)
-           (transform-region (sheet-native-transformation to-sheet)
+           (transform-region ;;(compose-transformations
+                              ;;(sheet-native-transformation to-sheet)
+                              (sheet-device-transformation (medium-sheet medium));;)
                              (make-rectangle* to-x to-y (+ to-x width) (+ to-y height))))))
     (clim:with-bounding-rectangle* (min-x min-y max-x max-y)
         region
       (if (clim:rectanglep region)
           (multiple-value-bind (x1 y1)
               (transform-position
-               (sheet-native-transformation to-sheet)
+               ;;(compose-transformations
+                ;;(sheet-native-transformation to-sheet)
+                (sheet-device-transformation (medium-sheet medium));;)
                to-x to-y)
             (%medium-draw-image medium
-                                (coerce-image image '2d-rgb-image)
+                                (coerce-image image 'rgb-image)
                                 (+ 0 (- min-x x1))
                                 (+ 0 (- min-y y1))
                                 (- max-x min-x)

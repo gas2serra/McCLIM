@@ -33,6 +33,7 @@
      (:file "bordered-output-examples")
      (:file "misc-tests")
      (:file "drawing-tests")
+     (:file "raster-image-tests")
      (:file "image-viewer")
      (:file "sliderdemo")
      (:file "accepting-values")
