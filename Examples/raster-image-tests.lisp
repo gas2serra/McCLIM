@@ -53,7 +53,7 @@
              (spacing (:thickness 3)
                (clim-extensions:lowering ()
                  (horizontally ()
-                   (labelling (:label "Backend")
+                   (labelling (:label "Stream")
                      (climi::bordering (:border-width *raster-image-border-width*)
                        output)))))
              (spacing (:thickness 3)
@@ -96,7 +96,7 @@
                   (funcall (raster-image-test-drawer item) output))
               (condition (condition)
                 (clim:with-drawing-options (description :ink +red+)
-                  (format description "Backend:~a~%" condition)))))))))
+                  (format description "Error:~a~%" condition)))))))))
 
 
 (defun run-raster-image-tests ()
@@ -182,39 +182,23 @@
       (clim-image:draw-image* stream image 120 10))))
 
 
-(defparameter *opticl-testing-image-directory* (uiop/pathname:merge-pathnames* "test/images/" (asdf:system-source-directory (asdf:find-system :opticl))))
-(defparameter *opticl-testing-image-files* '("camel-indexed.tiff"
-                                             "truck-gray.jpeg"
-                                             "truck-gray-none.tiff"
-                                             "truck-rgb-deflate.tiff"
-                                             "truck-rgb-none.tiff"
-                                             "truck-small.png"
-                                             "horse-16-bit.tiff"
-                                             "truck-gray-jpeg.tiff"
-                                             "truck-gray-packbits.tiff"
-                                             "truck-rgb-jpeg.tiff"
-                                             "truck-rgb-packbits.tiff"
-                                             "truck-gray-deflate.tiff"
-                                             "truck-gray-lzw.tiff"
-                                             "truck.jpeg"
-                                             "truck-rgb-lzw.tiff"
-                                             "truck-small.jpeg"))
+(defparameter *opticl-testing-image-directory* (uiop/pathname:merge-pathnames* "Examples/images/" (asdf:system-source-directory (asdf:find-system :mcclim))))
+(defparameter *opticl-testing-image-files* '("pippo-rgb.png"
+                                             "pippo-rgba.png"))
+
 
 (define-raster-image-test "03) read " (stream)
     "Simple loading..."
   (let ((h 10)
         (w 10))
     (dolist (file *opticl-testing-image-files*)
-      (handler-case
-          (let ((path
-                 (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
-            (let ((image (clim-image:read-image path)))
-              (clim-image:draw-image* stream image 10 h)
-              (setf h (+ h (clim-image:image-height image) 10))))
-        (condition (condition)
-          (clim:with-drawing-options (stream :ink +red+)
-            (clim:draw-text* stream "Error" 20 h)
-              (setf h (+ h 30))))))))
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (clim-image:draw-image* stream image 10 h)
+               (setf h (+ h (clim-image:image-height image)))))
+        (setf h (+ h 10))))))
 
 (define-raster-image-test "03) read -coercion " (stream)
     "Simple loading..."
@@ -228,8 +212,109 @@
               (clim-image:draw-image* stream image 10 h)
               (setf h (+ h (clim-image:image-height image) 10))
               (let ((2da-image (clim-image:coerce-image image 'clim-image:rgb-image)))
-                (clim-image:draw-image* stream 2da-image 200 (- h (clim-image:image-height image) 10)))))
+                (clim-image:draw-image* stream 2da-image 250 (- h (clim-image:image-height image) 10)))))
         (condition (condition)
           (clim:with-drawing-options (stream :ink +red+)
             (clim:draw-text* stream "Error" 20 h)
               (setf h (+ h 30))))))))
+
+
+(define-raster-image-test "04) image translation" (stream)
+    "draw-design"
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+                (with-translation (stream 10 h)
+                  (clim-image:draw-image* stream image 0 0))
+                (setf h (+ h (clim-image:image-height image)))))
+        (setf h (+ h 10))))
+    (setf h 10)
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (clim-image:draw-image* stream image 0 0 :transformation (clim:make-translation-transformation 250 h))
+               (setf h (+ h (clim-image:image-height image)))))
+        (setf h (+ h 10))))))
+
+(define-raster-image-test "04) image clipping" (stream)
+    "clipping"
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (clim-image:draw-image* stream image 10 h :clipping-region (make-rectangle* 10 10 100 100))
+               (setf h (+ h (clim-image:image-height image)))))
+        (setf h (+ h 10))))))
+
+
+(define-raster-image-test "05) image design " (stream)
+    "draw-design"
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (clim::draw-design stream (clim-image:make-image-design image) :x 10 :y h)
+               (setf h (+ h (clim-image:image-height image)))))
+        (setf h (+ h 10))))))
+
+(define-raster-image-test "06) image design translation" (stream)
+    "draw-design"
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (with-translation (stream 10 h)
+                 (clim::draw-design stream (clim-image:make-image-design image))
+                 (setf h (+ h (clim-image:image-height image)))))
+             (setf h (+ h 10)))))
+    (setf h 10)
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (clim::draw-design stream (clim-image:make-image-design image)
+                                  :transformation (clim:make-translation-transformation 250 h))
+               (setf h (+ h (clim-image:image-height image)))))
+        (setf h (+ h 10))))))
+
+(define-raster-image-test "06) image design clipping" (stream)
+    "design clipping"
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (with-translation (stream 10 h)
+                 (clim::draw-design stream (clim-image:make-image-design image)
+                                    :clipping-region (make-rectangle* 10 10 100 100))
+                 (setf h (+ h (clim-image:image-height image)))))
+             (setf h (+ h 10)))))
+    (setf h 10)
+    (dolist (file *opticl-testing-image-files*)
+      (unwind-protect
+           (let ((path
+                  (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+             (let ((image (clim-image:read-image path)))
+               (clim::draw-design stream (clim-image:make-image-design image)
+                                  :clipping-region (make-rectangle* 10 10 100 100)
+                                  :transformation (clim:make-translation-transformation 250 h))
+               (setf h (+ h (clim-image:image-height image)))))
+        (setf h (+ h 10))))))
