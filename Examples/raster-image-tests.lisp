@@ -151,36 +151,46 @@
                   (multiple-value-list (apply #'clim-image:octet-blend-function
                                               (mapcar #'clim-image:color-value->octet (append v2 v1))))))))))
 
-(define-raster-image-test "02) simple -2da " (stream)
-    "Simple drawing of two dimensional array of pixels: white, purple, olive."
+(define-raster-image-test "02) simple - 2 dim array " (stream)
+    "Simple drawing of two dimensional array of pixels: white, black;
+red, green, blue;
+purple, olive."
   (let* ((image (clim-image:make-rgb-image 90 70))
          (pixels (clim-image:image-pixels image)))
-    (clim-image:draw-image* stream image 10 10)
-    (dotimes (x 90)
-      (dotimes (y 70)
-        (setf (aref pixels y x) #x800080)))
-    (clim-image:draw-image* stream image 120 10)
-    (dotimes (x 90)
-      (dotimes (y 70)
-        (setf (aref pixels y x) #x808000)))
-    (with-translation (stream 110 0)
-      (clim-image:draw-image* stream image 120 10))))
+    (flet ((draw-rect (color w h)
+             (dotimes (x 90)
+               (dotimes (y 70)
+                 (setf (aref pixels y x) color)))
+             (clim-image:draw-image* stream image w h)))
+      (draw-rect #xFFFFFF 10 10)
+      (draw-rect #x000000 110 10)
+      (draw-rect #x0000F0 10 100)
+      (draw-rect #x00F000 110 100)
+      (draw-rect #xF00000 210 100)
+      (draw-rect #x800080 10 200)
+      (draw-rect #x808000 110 200))))
 
-(define-raster-image-test "02) simple - opt" (stream)
-    "Simple drawing of opticl pixels: white, purple, olive."
+(define-raster-image-test "02) simple - opticl" (stream)
+    "Simple drawing of opticl image: white, black;
+red, green, blue;
+purple, olive."
   (let* ((image (clim-image:make-opticl-rgb-image 90 70))
          (pixels (clim-image:image-pixels image)))
-    (clim-image:draw-image* stream image 10 10)
-    (dotimes (x 90)
-      (dotimes (y 70)
-        (setf (opticl:pixel pixels y x) (values #x80 #x00 #x80))))
-    (clim-image:draw-image* stream image 120 10)
-    (dotimes (x 90)
-      (dotimes (y 70)
-        (setf (opticl:pixel pixels y x) (values #x80 #x80 #x00))))
-    (with-translation (stream 110 0)
-      (clim-image:draw-image* stream image 120 10))))
-
+    (flet ((draw-rect (color w h)
+             (let ((b (first color))
+                   (g (second color))
+                   (r (third color)))
+               (dotimes (x 90)
+                 (dotimes (y 70)
+                   (setf (opticl:pixel pixels y x) (values r g b)))))
+             (clim-image:draw-image* stream image w h)))
+      (draw-rect (list #xFF #xFF #xFF) 10 10)
+      (draw-rect (list #x00 #x00 #x00) 110 10)
+      (draw-rect (list #x00 #x00 #xF0) 10 100)
+      (draw-rect (list #x00 #xF0 #x00) 110 100)
+      (draw-rect (list #xF0 #x00 #x00) 210 100)
+      (draw-rect (list #x80 #x00 #x80) 10 200)
+      (draw-rect (list #x80 #x80 #x00) 110 200))))
 
 (defparameter *opticl-testing-image-directory* (uiop/pathname:merge-pathnames* "Examples/images/" (asdf:system-source-directory (asdf:find-system :mcclim))))
 (defparameter *opticl-testing-image-files* '("pippo-rgb.png"
@@ -188,7 +198,7 @@
 
 
 (define-raster-image-test "03) read " (stream)
-    "Simple loading..."
+    "Simple loading."
   (let ((h 10)
         (w 10))
     (dolist (file *opticl-testing-image-files*)
@@ -200,8 +210,8 @@
                (setf h (+ h (clim-image:image-height image)))))
         (setf h (+ h 10))))))
 
-(define-raster-image-test "03) read -coercion " (stream)
-    "Simple loading..."
+(define-raster-image-test "03) read - coercion " (stream)
+    "Simple loading and coercion."
   (let ((h 10)
         (w 10))
     (dolist (file *opticl-testing-image-files*)
@@ -219,7 +229,7 @@
               (setf h (+ h 30))))))))
 
 
-(define-raster-image-test "04) image translation" (stream)
+(define-raster-image-test "04) image - translation" (stream)
     "draw-design"
   (let ((h 10)
         (w 10))
@@ -242,7 +252,7 @@
                (setf h (+ h (clim-image:image-height image)))))
         (setf h (+ h 10))))))
 
-(define-raster-image-test "04) image clipping" (stream)
+(define-raster-image-test "04) image - clipping" (stream)
     "clipping"
   (let ((h 10)
         (w 10))
@@ -256,7 +266,7 @@
         (setf h (+ h 10))))))
 
 
-(define-raster-image-test "05) image design " (stream)
+(define-raster-image-test "05) image design - drawing" (stream)
     "draw-design"
   (let ((h 10)
         (w 10))
@@ -269,7 +279,7 @@
                (setf h (+ h (clim-image:image-height image)))))
         (setf h (+ h 10))))))
 
-(define-raster-image-test "06) image design translation" (stream)
+(define-raster-image-test "05) image design - translation" (stream)
     "draw-design"
   (let ((h 10)
         (w 10))
@@ -293,7 +303,7 @@
                (setf h (+ h (clim-image:image-height image)))))
         (setf h (+ h 10))))))
 
-(define-raster-image-test "06) image design clipping" (stream)
+(define-raster-image-test "05) image design - clipping" (stream)
     "design clipping"
   (let ((h 10)
         (w 10))
@@ -318,3 +328,84 @@
                                   :transformation (clim:make-translation-transformation 250 h))
                (setf h (+ h (clim-image:image-height image)))))
         (setf h (+ h 10))))))
+
+(define-raster-image-test "06) generic set fn" (stream)
+    "Simple drawing of image: white, black;
+red, green, blue;
+purple, olive."
+  (let* ((image (clim-image:make-opticl-rgb-image 90 70))
+         (fn (clim-image:image-rgb-set-fn image)))
+    (flet ((draw-rect (fn color w h)
+             (multiple-value-bind (r g b)
+                 (clim-image:color->octets color)
+               (dotimes (x 90)
+                 (dotimes (y 70)
+                   (funcall fn x y r g b))))
+             (clim-image:draw-image* stream image w h)))
+      (draw-rect fn +white+ 10 10)
+      (draw-rect fn +black+ 110 10)
+      (draw-rect fn +red+ 10 100)
+      (draw-rect fn +green+ 110 100)
+      (draw-rect fn +blue+ 210 100)
+      (draw-rect fn +purple+ 10 200)
+      (draw-rect fn +olive-drab+ 110 200))))
+
+(define-raster-image-test "07) output record - :draw nil" (stream)
+    "output record - no image"
+  (let* ((h 10)
+         (w 10)
+         (file (car *opticl-testing-image-files*))
+         (path
+          (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
+         (image (clim-image:read-image path))
+         (record
+          (clim:with-output-to-output-record (stream)
+            (with-output-recording-options (stream :record t :draw nil)
+              (clim-image:draw-image* stream image 10 10)
+              (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))))
+
+(define-raster-image-test "07) output record - moving" (stream)
+    "output record - two image"
+  (let* ((h 10)
+         (w 10)
+         (file (car *opticl-testing-image-files*))
+         (path
+          (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
+         (image (clim-image:read-image path))
+         (record
+          (clim:with-output-to-output-record (stream)
+            (with-output-recording-options (stream :record t :draw t)
+              (clim-image:draw-image* stream image 10 10)
+              (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
+    (setf (clim:output-record-position record) (values 10 300))
+    (replay record stream)))
+
+(define-raster-image-test "07) output record - design - :draw nil" (stream)
+    "output record - design - no image"
+  (let* ((h 10)
+         (w 10)
+         (file (car *opticl-testing-image-files*))
+         (path
+          (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
+         (image (clim-image:read-image path))
+         (record
+          (clim:with-output-to-output-record (stream)
+            (with-output-recording-options (stream :record t :draw nil)
+              (clim::draw-design stream (clim-image:make-image-design image) :x 10 :y 10)
+              (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))))
+
+(define-raster-image-test "07) output record - design - moving" (stream)
+    "output record - design - two image"
+  (let* ((h 10)
+         (w 10)
+         (file (car *opticl-testing-image-files*))
+         (path
+          (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
+         (image (clim-image:read-image path))
+         (record
+          (clim:with-output-to-output-record (stream)
+            (with-output-recording-options (stream :record t :draw t)
+              (clim::draw-design stream (clim-image:make-image-design image) :x 10 :y 10)
+              (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
+    (setf (clim:output-record-position record) (values 10 300))
+    (replay record stream)))
