@@ -4,8 +4,6 @@
   ())
 
 
-(defgeneric make-get-rgba-octets-code (image-class pixels-var x-var y-var))
-(defgeneric make-set-rgba-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))
 (defgeneric make-get-alpha-octets-code (image-class pixels-var x-var y-var))
 (defgeneric make-set-alpha-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))
 

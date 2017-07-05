@@ -23,12 +23,18 @@
    #:basic-image
    #:image-pixels
    #:image-pixels-type
-   #:make-get-rgb-octets-code
-   #:make-set-rgb-octets-code
-   #:make-get-rgba-octets-code
-   #:make-set-rgba-octets-code
+   #:image-rgb-get-code
+   #:image-rgb-set-code
+   #:image-rgba-get-code
+   #:image-rgba-set-code
+   #:image-rgb-get-fn
+   #:image-rgb-set-fn
+   #:image-rgba-get-fn
+   #:image-rgba-set-fn
    ;; image ops
-   #:make-map-rgb-color
+   #:mk-rgb-image-primitives
+   #:mk-rgba-image-primitives
+   #:mk-fast-copy-image
    #:read-image
    #:write-image
    #:image-format-read-supported-p

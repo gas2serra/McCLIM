@@ -19,7 +19,7 @@
 (defclass drawable-image (image)
   ())
 
-(defgeneric map-rgb-color (drawable-image fn))
+(defgeneric map-rgb-color (drawable-image fn &key x y width height))
 
 (defun draw-image* (medium image x y
                     &rest args
@@ -59,13 +59,23 @@
 ;;; image manipulation functions
 ;;;
 
-(defgeneric mage-pixels-type (image-class))
-(defgeneric make-get-rgb-octets-code (image-class pixels-var x-var y-var))
-(defgeneric make-set-rgb-octets-code (image-class pixels-var x-var y-var
-                                      red-var grren-var blue-var))
-(defgeneric make-get-rgba-octets-code (image-class pixels-var x-var y-var))
-(defgeneric make-set-rgba-octets-code (image-class pixels-var x-var y-var
-                                       red-var grren-var blue-var alpha-var))
+(defgeneric image-pixels-type (image-class))
+
+(defgeneric image-rgb-get-code (image-class pixels-var x-var y-var))
+(defgeneric image-rgb-set-code (image-class pixels-var x-var y-var
+                                red-var grren-var blue-var))
+(defgeneric image-rgba-get-code (image-class pixels-var x-var y-var))
+(defgeneric image-rgba-set-code (image-class pixels-var x-var y-var
+                                 red-var grren-var blue-var alpha-var))
+
+(deftype image-rgb-get-fn () '(function (fixnum fixnum) (values octet octet octet)))
+(deftype image-rgba-get-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
+(deftype image-rgb-set-fn () '(function (fixnum fixnum octet octet octet)))
+(deftype image-rgba-set-fn () '(function (fixnum fixnum octet octet octet octet)))
+(defgeneric image-rgb-get-fn (image &key dx dy region))
+(defgeneric image-rgb-set-fn (image &key dx dy))
+(defgeneric image-rgba-get-fn (image &key dx dy region))
+(defgeneric image-rgba-set-fn (image &key dx dy))
 
 ;;;
 ;;; image I/O

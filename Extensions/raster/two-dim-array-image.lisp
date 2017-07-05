@@ -50,5 +50,6 @@
                                             (dpb ,blue-var (byte 8 16)
                                                  (dpb 255 (byte 8 24) 0)))))))
 
-(make-map-rgb-color rgb-image)
-(make-copy-image rgb-image rgb-image)
+(mk-image-functions rgb-image)
+(mk-rgb-image-functions rgb-image)
+(mk-fast-copy-image rgb-image rgb-image)

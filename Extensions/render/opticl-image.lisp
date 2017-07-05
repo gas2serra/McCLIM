@@ -35,59 +35,10 @@
 ;;; Pixeled Design
 ;;;
 
-(defmethod  make-pixeled-image-rgba-octets-fn ((image opticl-rgb-image) dx dy region)
-  (let ((data (image-pixels image)))
-    (declare (type opticl-rgb-image-pixels data))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (if (clim:region-contains-position-p region x y)
-          (multiple-value-bind (red green blue)
-              (opticl:pixel data (+ y dy) (+ x dx))
-            (values red green blue 255))
-          (values 0 0 0 0)))))
-
-(defmethod  make-pixeled-image-rgba-octets-unsafe-fn ((image opticl-rgb-image) dx dy region)
-  (let ((data (image-pixels image)))
-    (declare (type opticl-rgb-image-pixels data))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (multiple-value-bind (red green blue)
-          (opticl:pixel data (+ y dy) (+ x dx))
-        (values red green blue 255)))))
-
-(defmethod  make-pixeled-image-rgba-octets-fn ((image opticl-rgba-image) dx dy region)
-  (let ((data (image-pixels image)))
-    (declare (type opticl-rgba-image-pixels data))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (if (clim:region-contains-position-p region x y)
-          (opticl:pixel data (+ y dy) (+ x dx))
-          (values 0 0 0 0)))))
-
-(defmethod  make-pixeled-image-rgba-octets-unsafe-fn ((image opticl-rgba-image) dx dy region)
-  (let ((data (image-pixels image)))
-    (declare (type opticl-rgba-image-pixels data))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (opticl:pixel data (+ y dy) (+ x dx)))))
-
-(defmethod  make-pixeled-image-rgba-octets-fn ((image opticl-stencil-image) dx dy region)
-  (let ((data (image-pixels image)))
-    (declare (type opticl-stencil-image-data data))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (if (clim:region-contains-position-p region x y)
-          (let ((p (opticl:pixel data (+ y dy) (+ x dx))))
-            (values 0 0 0 p))
-          (values 0 0 0 0)))))
-
-(defmethod  make-pixeled-image-rgba-octets-unsafe-fn ((image opticl-stencil-image) dx dy region)
-  (let ((data (image-pixels image)))
-    (declare (type opticl-stencil-image-data data))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (let ((p (opticl:pixel data (+ y dy) (+ x dx))))
-        (values 0 0 0 p)))))
+(defmethod  make-pixeled-image-rgba-octets-fn (image dx dy region)
+  (image-rgb-get-fn image :dx dx :dy dy :region region))
+(defmethod  make-pixeled-image-rgba-octets-unsafe-fn (image dx dy region)
+  (image-rgb-get-fn image :dx dx :dy dy :region nil))
 
 ;;;
 ;;; Operations

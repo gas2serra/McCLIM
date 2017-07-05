@@ -36,10 +36,9 @@
                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                   (values ,red-var ,green-var ,blue-var))))
 
-(make-map-rgb-color opticl-rgb-image)
-(make-copy-image opticl-rgb-image opticl-rgb-image)
-(make-copy-image opticl-rgb-image rgb-image)
-(make-copy-image rgb-image opticl-rgb-image)
+(mk-image-functions opticl-rgb-image)
+(mk-rgb-image-functions opticl-rgb-image)
+(mk-fast-copy-image opticl-rgb-image opticl-rgb-image)
 
 ;;;
 ;;; RGBA
@@ -70,10 +69,9 @@
                             `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                    (values ,red-var ,green-var ,blue-var ,alpha-var))))
 
-(make-map-rgb-color opticl-rgba-image)
-(make-copy-image opticl-rgba-image opticl-rgba-image)
-(make-copy-image opticl-rgba-image opticl-rgb-image)
-(make-copy-image opticl-rgba-image rgb-image)
+(mk-image-functions opticl-rgba-image)
+(mk-rgba-image-functions opticl-rgba-image)
+(mk-fast-copy-image opticl-rgba-image opticl-rgba-image)
 
 ;;;
 ;;; I/O
@@ -117,7 +115,6 @@
 
 (defmacro define-opticl-image-file-writer (format fn)
   `(define-image-file-writer ,format (image destination)
-     (declare (ignore quality))
      (let ((img (coerce-image image 'opticl-rgb-image)))
        (if ,fn
            (if (streamp destination)
