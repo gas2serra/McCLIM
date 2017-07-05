@@ -18,7 +18,7 @@
   :components ((:file "two-dim-array-image")))
 
 (defsystem #:mcclim-raster/opticl
-  :depends-on (#:mcclim-raster/two-dim-array)
+  :depends-on (#:mcclim-raster/two-dim-array #:opticl)
   :serial t
   :components ((:file "opticl-image")))
 

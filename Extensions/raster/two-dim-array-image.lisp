@@ -35,38 +35,20 @@
 		   :pixels data)))
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
-  (defmethod image-pixels-type ((image-class (eql 'rgb-image)))
-    'rgb-image-pixels)
-
-  (defmethod make-get-rgb-octets-code ((image-class (eql 'rgb-image)) pixels-var x-var y-var)
-    `(the (values octet octet octet)
-          (let ((p (aref ,pixels-var ,y-var  ,x-var)))
-            (values (ldb (byte 8 0) p)
-                    (ldb (byte 8 8) p)
-                    (ldb (byte 8 16) p)))))
-
-  (defmethod make-set-rgb-octets-code ((image-class (eql 'rgb-image)) pixels-var x-var y-var red-var green-var blue-var)
-    `(setf (aref ,pixels-var ,y-var ,x-var)
-           (dpb ,red-var (byte 8 0)
-                (dpb ,green-var (byte 8 8)
-                     (dpb ,blue-var (byte 8 16)
-                          (dpb 255 (byte 8 24) 0))))))
-
-  (defmethod make-get-rgba-octets-code ((image-class (eql 'rgb-image)) pixels-var x-var y-var)
-    `(the (values octet octet octet)
-          (let ((p (aref ,pixels-var ,y-var  ,x-var)))
-            (values (ldb (byte 8 0) p)
-                    (ldb (byte 8 8) p)
-                    (ldb (byte 8 16) p)
-                    255))))
-
-  (defmethod make-set-rgba-octets-code ((image-class (eql 'rgb-image)) pixels-var x-var y-var
-                                        red-var green-var blue-var alpha-var)
-    `(setf (aref ,pixels-var ,y-var ,x-var)
-           (dpb ,red-var (byte 8 0)
-                (dpb ,green-var (byte 8 8)
-                     (dpb ,blue-var (byte 8 16)
-                          (dpb 255 (byte 8 24) 0)))))))
+  (mk-rgb-image-primitives rgb-image rgb-image-pixels
+                           pixels-var x-var y-var red-var green-var blue-var
+                           `(let ((p (aref ,pixels-var
+                                           ,y-var
+                                           ,x-var)))
+                             (values (ldb (byte 8 0) p)
+                                     (ldb (byte 8 8) p)
+                                     (ldb (byte 8 16) p)
+                                     255))
+                           `(setf (aref ,pixels-var ,y-var ,x-var)
+                                  (dpb ,red-var (byte 8 0)
+                                       (dpb ,green-var (byte 8 8)
+                                            (dpb ,blue-var (byte 8 16)
+                                                 (dpb 255 (byte 8 24) 0)))))))
 
 (make-map-rgb-color rgb-image)
 (make-copy-image rgb-image rgb-image)

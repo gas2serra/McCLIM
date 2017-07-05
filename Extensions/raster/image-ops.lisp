@@ -1,5 +1,35 @@
 (in-package :mcclim-raster)
 
+(defmacro mk-rgb-image-primitives (image-class pixels-type pixels-var x-var y-var red-var green-var blue-var get-code set-code)
+  `(progn
+     (defmethod image-pixels-type ((image-class (eql ',image-class)))
+       ',pixels-type)
+     (defmethod make-get-rgb-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
+       ,get-code)
+     (defmethod make-set-rgb-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var ,red-var ,green-var ,blue-var)
+       ,set-code)
+     (defmethod make-get-rgba-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
+       (multiple-value-bind (rc gc bc)
+           ,get-code
+         (values rc gc bc 255)))
+     (defmethod make-set-rgba-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var ,red-var ,green-var ,blue-var alpha-var)
+       (declare (ignore alpha-var))
+       ,set-code)))
+
+(defmacro mk-rgba-image-primitives (image-class pixels-type pixels-var x-var y-var red-var green-var blue-var alpha-var get-code set-code)
+  `(progn
+     (defmethod image-pixels-type ((image-class (eql ',image-class)))
+       ',pixels-type)
+     (defmethod make-get-rgb-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
+       ,get-code)
+     (defmethod make-set-rgb-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var ,red-var ,green-var ,blue-var)
+       (let ((,alpha-var 255))
+         ,set-code))
+     (defmethod make-get-rgba-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
+           ,get-code)
+     (defmethod make-set-rgba-octets-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var ,red-var ,green-var ,blue-var alpha-var)
+       ,set-code)))
+
 ;;;
 ;;; map functions
 ;;;

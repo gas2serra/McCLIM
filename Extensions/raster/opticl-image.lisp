@@ -28,25 +28,13 @@
                  :height height))
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
-  (defmethod image-pixels-type ((image-class (eql 'opticl-rgb-image)))
-    'opticl-rgb-image-pixels)
-
-  (defmethod make-get-rgb-octets-code ((image-class (eql 'opticl-rgb-image)) pixels-var x-var y-var)
-    `(opticl:pixel ,pixels-var ,y-var ,x-var))
-
-  (defmethod make-set-rgb-octets-code ((image-class (eql 'opticl-rgb-image)) pixels-var x-var y-var red-var green-var blue-var)
-    `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-           (values ,red-var ,green-var ,blue-var)))
-
-  (defmethod make-get-rgba-octets-code ((image-class (eql 'opticl-rgb-image)) pixels-var x-var y-var)
-    `(multiple-value-bind (r g b a)
-         (opticl:pixel ,pixels-var ,y-var ,x-var)
-       (values r g b 255)))
-
-  (defmethod make-set-rgba-octets-code ((image-class (eql 'opticl-rgb-image)) pixels-var x-var y-var
-                                       red-var green-var blue-var alpha-var)
-    `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-           (values ,red-var ,green-var ,blue-var 255))))
+  (mk-rgb-image-primitives opticl-rgb-image opticl-rgb-image-pixels
+                           pixels-var x-var y-var red-var green-var blue-var
+                           `(multiple-value-bind (r g b)
+                                (opticl:pixel ,pixels-var ,y-var ,x-var)
+                              (values r g b 255))
+                           `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
+                                  (values ,red-var ,green-var ,blue-var))))
 
 (make-map-rgb-color opticl-rgb-image)
 (make-copy-image opticl-rgb-image opticl-rgb-image)
@@ -76,23 +64,11 @@
                  :height height))
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
-  (defmethod image-pixels-type ((image-class (eql 'opticl-rgba-image)))
-    'opticl-rgba-image-pixels)
-
-  (defmethod make-get-rgb-octets-code ((image-class (eql 'opticl-rgba-image)) pixels-var x-var y-var)
-    `(multiple-value-bind (r g b a)
-         (opticl:pixel ,pixels-var ,y-var ,x-var)
-       (values r g b)))
-  (defmethod make-set-rgb-octets-code ((image-class (eql 'opticl-rgba-image)) pixels-var x-var y-var red-var green-var blue-var)
-    `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-           (values ,red-var ,green-var ,blue-var 255)))
-
-  (defmethod make-get-rgba-octets-code ((image-class (eql 'opticl-rgba-image)) pixels-var x-var y-var)
-    `(opticl:pixel ,pixels-var ,y-var ,x-var))
-  (defmethod make-set-rgba-octets-code ((image-class (eql 'opticl-rgba-image)) pixels-var x-var y-var
-                                       red-var green-var blue-var alpha-var)
-    `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-           (values ,red-var ,green-var ,blue-var ,alpha-var))))
+  (mk-rgba-image-primitives opticl-rgba-image opticl-rgba-image-pixels
+                            pixels-var x-var y-var red-var green-var blue-var alpha-var
+                            `(opticl:pixel ,pixels-var ,y-var ,x-var)
+                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
+                                   (values ,red-var ,green-var ,blue-var ,alpha-var))))
 
 (make-map-rgb-color opticl-rgba-image)
 (make-copy-image opticl-rgba-image opticl-rgba-image)
