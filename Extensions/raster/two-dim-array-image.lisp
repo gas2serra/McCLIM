@@ -36,7 +36,7 @@
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (def-rgb-image-primitives rgb-image rgb-image-pixels
-                           pixels-var x-var y-var red-var green-var blue-var
+                           pixels-var x-var y-var red-var green-var blue-var alpha-var
                            `(let ((p (aref ,pixels-var
                                            ,y-var
                                            ,x-var)))
@@ -119,7 +119,6 @@
 ;;;
 ;;; Gray
 ;;;
-
 (defclass gray-image (single-channel-image drawable-image gray-image-mixin)
   ())
 
@@ -130,7 +129,7 @@
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (def-gray-image-primitives gray-image single-channel-image-pixels
-                            pixels-var x-var y-var gray-var
+                            pixels-var x-var y-var gray-var alpha-var
                             `(aref ,pixels-var ,y-var ,x-var)
                             `(setf (aref ,pixels-var ,y-var ,x-var) ,gray-var)))
 
@@ -139,7 +138,6 @@
 ;;;
 ;;; Stencil
 ;;;
-
 (defclass stencil-image (single-channel-image stencil-image-mixin)
   ())
 

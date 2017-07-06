@@ -29,7 +29,7 @@
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (def-rgb-image-primitives opticl-rgb-image opticl-rgb-image-pixels
-                           pixels-var x-var y-var red-var green-var blue-var
+                           pixels-var x-var y-var red-var green-var blue-var alpha-var
                            `(multiple-value-bind (r g b)
                                 (opticl:pixel ,pixels-var ,y-var ,x-var)
                               (values r g b 255))
@@ -42,7 +42,6 @@
 ;;;
 ;;; RGBA
 ;;;
-
 (deftype opticl-rgba-image-pixels () 'opticl-core:8-bit-rgba-image)
 
 (defclass opticl-rgba-image (opticl-image drawable-image rgba-image-mixin)
@@ -89,7 +88,6 @@
 ;;;
 ;;; Gray
 ;;;
-
 (defclass opticl-gray-image (opticl-single-channel-image drawable-image gray-image-mixin)
   ())
 
@@ -100,7 +98,7 @@
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (def-gray-image-primitives opticl-gray-image opticl-single-channel-image-pixels
-                            pixels-var x-var y-var gray-var
+                            pixels-var x-var y-var gray-var alpha-var
                             `(opticl:pixel ,pixels-var ,y-var ,x-var)
                             `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                    ,gray-var)))
@@ -110,7 +108,6 @@
 ;;;
 ;;; Stencil
 ;;;
-
 (defclass opticl-stencil-image (opticl-single-channel-image stencil-image-mixin)
   ())
 

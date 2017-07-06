@@ -10,8 +10,9 @@
   :components ((:file "package")
                (:file "color")
                (:file "image")
-               (:file "recording")
-               (:file "image-ops")))
+               (:file "image-prim")
+               (:file "image-ops")
+               (:file "recording")))
 
 (defsystem #:mcclim-raster/two-dim-array
   :depends-on (#:mcclim-raster/core)

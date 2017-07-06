@@ -1,7 +1,7 @@
 (in-package :mcclim-raster-internals)
 
 ;;;
-;;; color's utility functions
+;;; utility functions
 ;;;
 
 (deftype octet ()
@@ -29,7 +29,7 @@
     (logand #xFF (ash (+ (ash temp -8) temp) -8))))
 
 ;;;
-;;; blend function
+;;; blend functions
 ;;;
 
 (declaim (inline %lerp)
@@ -61,6 +61,37 @@
    (%byte-blend-value g.fg g.bg a.fg a.bg)
    (%byte-blend-value b.fg b.bg a.fg a.bg)
    (%prelerp a.fg a.bg a.bg)))
+
+(declaim (inline octet-rgba-blend-function)
+         (ftype (function (octet octet octet octet octet octet octet octet)
+			  (values octet octet octet octet))
+		octet-rgba-blend-function))
+(defun octet-rgba-blend-function (r.fg g.fg b.fg a.fg r.bg g.bg b.bg a.bg)
+  (octet-blend-function r.fg g.fg b.fg a.fg r.bg g.bg b.bg a.bg))
+
+(declaim (inline octet-rgb-blend-function)
+         (ftype (function (octet octet octet octet octet octet octet)
+			  (values octet octet octet))
+		octet-rgb-blend-function))
+(defun octet-rgb-blend-function (r.fg g.fg b.fg a.fg r.bg g.bg b.bg)
+  (values
+   (%byte-blend-value r.fg r.bg a.fg 255)
+   (%byte-blend-value g.fg g.bg a.fg 255)
+   (%byte-blend-value b.fg b.bg a.fg 255)))
+
+(declaim (inline octet-gray-blend-function)
+         (ftype (function (octet octet octet)
+			  octet)
+		octet-gray-blend-function))
+(defun octet-gray-blend-function (g.fg a.fg g.bg)
+  (%byte-blend-value g.fg g.bg a.fg 255))
+
+(declaim (inline octet-alpha-blend-function)
+         (ftype (function (octet octet)
+			  octet)
+		octet-alpha-blend-function))
+(defun octet-alpha-blend-function (a.fg a.bg)
+  (%prelerp a.fg a.bg a.bg))
 
 ;;;
 ;;; conversion

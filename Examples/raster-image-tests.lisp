@@ -134,7 +134,7 @@
                   (multiple-value-list (apply #'climi::color-blend-function v))
                   (mapcar #'clim-image:color-value->octet v1)
                   (mapcar #'clim-image:color-value->octet v2)
-                  (multiple-value-list (apply #'clim-image:octet-blend-function
+                  (multiple-value-list (apply #'clim-image:octet-rgba-blend-function
                                               (mapcar #'clim-image:color-value->octet (append v2 v1))))))))
     (clim:formatting-row (stream)
       (clim:formatting-cell (stream)
@@ -148,7 +148,7 @@
                   (multiple-value-list (apply #'climi::color-blend-function v))
                   (mapcar #'clim-image:color-value->octet v1)
                   (mapcar #'clim-image:color-value->octet v2)
-                  (multiple-value-list (apply #'clim-image:octet-blend-function
+                  (multiple-value-list (apply #'clim-image:octet-rgba-blend-function
                                               (mapcar #'clim-image:color-value->octet (append v2 v1))))))))))
 
 (define-raster-image-test "02) simple - 2 dim array " (stream)
@@ -199,8 +199,7 @@ purple, olive."
 
 (define-raster-image-test "03) read " (stream)
     "Simple loading."
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       (unwind-protect
            (let ((path
@@ -212,8 +211,7 @@ purple, olive."
 
 (define-raster-image-test "03) read - coercion " (stream)
     "Simple loading and coercion."
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       (let ((path
              (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
@@ -226,8 +224,7 @@ purple, olive."
 
 (define-raster-image-test "04) image - translation" (stream)
     "draw-design"
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       (unwind-protect
            (let ((path
@@ -249,8 +246,7 @@ purple, olive."
 
 (define-raster-image-test "04) image - clipping" (stream)
     "clipping"
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       (unwind-protect
            (let ((path
@@ -263,8 +259,7 @@ purple, olive."
 
 (define-raster-image-test "05) image design - drawing" (stream)
     "draw-design"
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       (unwind-protect
            (let ((path
@@ -276,8 +271,7 @@ purple, olive."
 
 (define-raster-image-test "05) image design - translation" (stream)
     "draw-design"
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       (unwind-protect
            (let ((path
@@ -300,8 +294,7 @@ purple, olive."
 
 (define-raster-image-test "05) image design - clipping" (stream)
     "design clipping"
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       (unwind-protect
            (let ((path
@@ -347,23 +340,18 @@ purple, olive."
 
 (define-raster-image-test "07) output record - :draw nil" (stream)
     "output record - no image"
-  (let* ((h 10)
-         (w 10)
-         (file (car *opticl-testing-image-files*))
+  (let* ((file (car *opticl-testing-image-files*))
          (path
           (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
-         (image (clim-image:read-image path))
-         (record
-          (clim:with-output-to-output-record (stream)
-            (with-output-recording-options (stream :record t :draw nil)
-              (clim-image:draw-image* stream image 10 10)
-              (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))))
+         (image (clim-image:read-image path)))
+    (clim:with-output-to-output-record (stream)
+      (with-output-recording-options (stream :record t :draw nil)
+        (clim-image:draw-image* stream image 10 10)
+        (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
 
 (define-raster-image-test "07) output record - moving" (stream)
     "output record - two image"
-  (let* ((h 10)
-         (w 10)
-         (file (car *opticl-testing-image-files*))
+  (let* ((file (car *opticl-testing-image-files*))
          (path
           (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
          (image (clim-image:read-image path))
@@ -377,23 +365,18 @@ purple, olive."
 
 (define-raster-image-test "07) output record - design - :draw nil" (stream)
     "output record - design - no image"
-  (let* ((h 10)
-         (w 10)
-         (file (car *opticl-testing-image-files*))
+  (let* ((file (car *opticl-testing-image-files*))
          (path
           (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
-         (image (clim-image:read-image path))
-         (record
-          (clim:with-output-to-output-record (stream)
-            (with-output-recording-options (stream :record t :draw nil)
-              (clim::draw-design stream (clim-image:make-image-design image) :x 10 :y 10)
-              (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))))
+         (image (clim-image:read-image path)))
+    (clim:with-output-to-output-record (stream)
+      (with-output-recording-options (stream :record t :draw nil)
+        (clim::draw-design stream (clim-image:make-image-design image) :x 10 :y 10)
+        (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
 
 (define-raster-image-test "07) output record - design - moving" (stream)
     "output record - design - two image"
-  (let* ((h 10)
-         (w 10)
-         (file (car *opticl-testing-image-files*))
+  (let* ((file (car *opticl-testing-image-files*))
          (path
           (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*))
          (image (clim-image:read-image path))
@@ -429,8 +412,7 @@ purple, olive."
 
 (define-raster-image-test "08) gray - opticl - coercion " (stream)
     "Simple loading and coercion."
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       ;;(handler-case
           (let ((path
@@ -448,8 +430,7 @@ purple, olive."
 
 (define-raster-image-test "08) gray - 2 dim arr - coercion " (stream)
     "Simple loading and coercion."
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       ;;(handler-case
           (let ((path
@@ -467,8 +448,7 @@ purple, olive."
 
 (define-raster-image-test "09) stencil - opticl - coercion " (stream)
     "Simple loading and coercion."
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       ;;(handler-case
           (let ((path
@@ -487,8 +467,7 @@ purple, olive."
 
 (define-raster-image-test "09) stencil - 2 dim array - coercion " (stream)
     "Simple loading and coercion."
-  (let ((h 10)
-        (w 10))
+  (let ((h 10))
     (dolist (file *opticl-testing-image-files*)
       ;;(handler-case
           (let ((path
@@ -504,3 +483,75 @@ purple, olive."
        ;;     (clim:draw-text* stream "Error" 20 h)
           ;;     (setf h (+ h 30))))))))
           )))
+
+(define-raster-image-test "10) rgb - opticl - blend (rgb)  " (stream)
+    ""
+  (let* ((img (clim-image:make-opticl-rgb-image 100 200))
+         (pixels (clim-image:image-pixels img))
+         (h 10))
+    (flet ((draw-rect (image color w h alpha)
+             (multiple-value-bind (r g b)
+                 (clim-image:color->octets color)
+               (dotimes (x 100)
+                 (dotimes (y 200)
+                   (setf (opticl:pixel pixels y x)
+                         (values r g b)))))
+             (clim-image:blend-image image 50 50 99 199 img 0 0 :alpha alpha)
+             (clim-image:draw-image* stream img w h)))
+      (dolist (file *opticl-testing-image-files*)
+        (let ((path
+               (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+          (let ((image (clim-image:read-image path)))
+            (draw-rect image +red+ 10 h 20)
+            (draw-rect image +red+ 120 h 100)
+            (draw-rect image +red+ 230 h 200)
+            (draw-rect image +red+ 340 h 230)
+            (setf h (+ h (clim-image:image-height image)))))))))
+
+(define-raster-image-test "10) rgb - opticl - blend (rgba)  " (stream)
+    ""
+  (let* ((img (clim-image:make-opticl-rgba-image 100 200))
+         (pixels (clim-image:image-pixels img))
+         (h 10))
+    (flet ((draw-rect (image color w h alpha)
+             (multiple-value-bind (r g b)
+                 (clim-image:color->octets color)
+               (dotimes (x 100)
+                 (dotimes (y 200)
+                   (setf (opticl:pixel pixels y x)
+                         (values r g b 255)))))
+             (clim-image:blend-image image 50 50 99 199 img 0 0 :alpha alpha)
+             (clim-image:draw-image* stream img w h)))
+      (dolist (file *opticl-testing-image-files*)
+        (let ((path
+               (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+          (let ((image (clim-image:read-image path)))
+            (draw-rect image +red+ 10 h 20)
+            (draw-rect image +red+ 120 h 100)
+            (draw-rect image +red+ 230 h 200)
+            (draw-rect image +red+ 340 h 230)
+            (setf h (+ h (clim-image:image-height image)))))))))
+
+(define-raster-image-test "10) rgb - opticl - blend (gray)  " (stream)
+    ""
+  (let* ((img (clim-image:make-opticl-gray-image 100 200))
+         (pixels (clim-image:image-pixels img))
+         (h 10))
+    (flet ((draw-rect (image color w h alpha)
+             (multiple-value-bind (r g b)
+                 (clim-image:color->octets color)
+               (dotimes (x 100)
+                 (dotimes (y 200)
+                   (setf (opticl:pixel pixels y x)
+                         (values (floor (+ r g b) 3))))))
+             (clim-image:blend-image image 50 50 99 199 img 0 0 :alpha alpha)
+             (clim-image:draw-image* stream img w h)))
+      (dolist (file *opticl-testing-image-files*)
+        (let ((path
+               (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+          (let ((image (clim-image:read-image path)))
+            (draw-rect image +red+ 10 h 20)
+            (draw-rect image +red+ 120 h 100)
+            (draw-rect image +red+ 230 h 200)
+            (draw-rect image +red+ 340 h 230)
+            (setf h (+ h (clim-image:image-height image)))))))))
