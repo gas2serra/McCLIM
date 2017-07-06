@@ -33,7 +33,7 @@
                     (loop for i from x to max-x do
                          (multiple-value-bind (red green blue alpha)
                              (funcall source-fn i j)
-                           (let* ((alpha-ste ,(make-get-alpha-octet-code stencil-class 'stencil-pixels `(+ stencil-dx i) `(+ stencil-dy j)))
+                           (let* ((alpha-ste ,(image-alpha-get-code stencil-class 'stencil-pixels `(+ stencil-dx i) `(+ stencil-dy j)))
                                   (a (octet-mult alpha alpha-ste)))
                              (if (> a 250)
                                  ,(image-rgba-set-code image-class 'pixels 'i 'j 'red 'green 'blue 'a)
@@ -62,7 +62,7 @@
                (declare (type octet red green blue alpha))
                (loop for j from y to max-y do
                     (loop for i from x to max-x do
-                         (let* ((alpha-ste ,(make-get-alpha-octet-code stencil-class 'stencil-pixels `(+ stencil-dx i) `(+ stencil-dy j)))
+                         (let* ((alpha-ste ,(image-alpha-get-code stencil-class 'stencil-pixels `(+ stencil-dx i) `(+ stencil-dy j)))
                                 (a (octet-mult alpha alpha-ste)))
                            (if (> a 250)
                                ,(image-rgba-set-code image-class 'pixels 'i 'j 'red 'green 'blue 'a)

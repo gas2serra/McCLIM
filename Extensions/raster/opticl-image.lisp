@@ -1,4 +1,4 @@
-(in-package :mcclim-raster)
+(in-package :mcclim-raster-internals)
 
 ;;;
 ;;; Opticl
@@ -28,7 +28,7 @@
                  :height height))
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
-  (mk-rgb-image-primitives opticl-rgb-image opticl-rgb-image-pixels
+  (def-rgb-image-primitives opticl-rgb-image opticl-rgb-image-pixels
                            pixels-var x-var y-var red-var green-var blue-var
                            `(multiple-value-bind (r g b)
                                 (opticl:pixel ,pixels-var ,y-var ,x-var)
@@ -36,9 +36,8 @@
                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                   (values ,red-var ,green-var ,blue-var))))
 
-(mk-image-functions opticl-rgb-image)
-(mk-rgb-image-functions opticl-rgb-image)
-(mk-fast-copy-image opticl-rgb-image opticl-rgb-image)
+(def-rgb-image-functions opticl-rgb-image)
+(def-fast-copy-to-rgb-image opticl-rgb-image opticl-rgb-image)
 
 ;;;
 ;;; RGBA
@@ -46,7 +45,7 @@
 
 (deftype opticl-rgba-image-pixels () 'opticl-core:8-bit-rgba-image)
 
-(defclass opticl-rgba-image (opticl-image drawable-image rgb-image-mixin)
+(defclass opticl-rgba-image (opticl-image drawable-image rgba-image-mixin)
   ((pixels :type opticl-rgba-image-pixels)))
 
 (defmethod initialize-instance :after ((image opticl-rgba-image)
@@ -63,15 +62,71 @@
                  :height height))
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
-  (mk-rgba-image-primitives opticl-rgba-image opticl-rgba-image-pixels
+  (def-rgba-image-primitives opticl-rgba-image opticl-rgba-image-pixels
                             pixels-var x-var y-var red-var green-var blue-var alpha-var
                             `(opticl:pixel ,pixels-var ,y-var ,x-var)
                             `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                    (values ,red-var ,green-var ,blue-var ,alpha-var))))
 
-(mk-image-functions opticl-rgba-image)
-(mk-rgba-image-functions opticl-rgba-image)
-(mk-fast-copy-image opticl-rgba-image opticl-rgba-image)
+(def-rgba-image-functions opticl-rgba-image)
+
+;;;
+;;; Single channel
+;;;
+(deftype opticl-single-channel-image-pixels () 'opticl-core:8-bit-gray-image)
+
+(defclass opticl-single-channel-image (opticl-image)
+  ((pixels :type opticl-single-channel-image-pixels)))
+
+(defmethod initialize-instance :after ((image opticl-single-channel-image)
+                                       &key)
+  (let ((width (image-width image))
+        (height (image-height image)))
+    (when (and width height (not (slot-boundp image 'pixels)))
+      (setf (slot-value image 'pixels)
+            (opticl:make-8-bit-gray-image height width :initial-element 0)))))
+
+;;;
+;;; Gray
+;;;
+
+(defclass opticl-gray-image (opticl-single-channel-image drawable-image gray-image-mixin)
+  ())
+
+(defun make-opticl-gray-image (width height)
+  (make-instance 'opticl-gray-image
+                 :width width
+                 :height height))
+
+(eval-when (:execute :load-toplevel :compile-toplevel)
+  (def-gray-image-primitives opticl-gray-image opticl-single-channel-image-pixels
+                            pixels-var x-var y-var gray-var
+                            `(opticl:pixel ,pixels-var ,y-var ,x-var)
+                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
+                                   ,gray-var)))
+
+(def-gray-image-functions opticl-gray-image)
+
+;;;
+;;; Stencil
+;;;
+
+(defclass opticl-stencil-image (opticl-single-channel-image stencil-image-mixin)
+  ())
+
+(defun make-opticl-stencil-image (width height)
+  (make-instance 'opticl-stencil-image
+                 :width width
+                 :height height))
+
+(eval-when (:execute :load-toplevel :compile-toplevel)
+  (def-stencil-image-primitives opticl-stencil-image opticl-single-channel-image-pixels
+                               pixels-var x-var y-var alpha-var
+                               `(opticl:pixel ,pixels-var ,y-var ,x-var)
+                               `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
+                                      ,alpha-var)))
+
+(def-stencil-image-functions opticl-stencil-image)
 
 ;;;
 ;;; I/O

@@ -1,4 +1,4 @@
-(in-package :mcclim-raster)
+(in-package :mcclim-raster-internals)
 
 ;;;
 ;;; color's utility functions

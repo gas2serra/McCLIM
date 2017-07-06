@@ -1,12 +1,5 @@
 (in-package :mcclim-render)
 
-(defclass stencil-image-mixin ()
-  ())
-
-
-(defgeneric make-get-alpha-octets-code (image-class pixels-var x-var y-var))
-(defgeneric make-set-alpha-octets-code (image-class pixels-var x-var y-var red-var grren-var blue-var alpha-var))
-
 ;;;
 ;;; Image Pattern
 ;;;

@@ -1,7 +1,7 @@
 (in-package :common-lisp-user)
 
 (defpackage :mcclim-render
-    (:use :clim :clim-lisp :clim-backend :clim-image)
+    (:use :clim :clim-lisp :clim-backend :clim-image :mcclim-raster-extensions)
     (:import-from :climi
 		  #:with-transformed-position
 		  #:with-transformed-positions

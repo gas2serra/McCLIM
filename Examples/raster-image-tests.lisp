@@ -215,19 +215,14 @@ purple, olive."
   (let ((h 10)
         (w 10))
     (dolist (file *opticl-testing-image-files*)
-      (handler-case
-          (let ((path
-                 (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
-            (let ((image (clim-image:read-image path)))
-              (clim-image:draw-image* stream image 10 h)
-              (setf h (+ h (clim-image:image-height image) 10))
-              (let ((2da-image (clim-image:coerce-image image 'clim-image:rgb-image)))
-                (clim-image:draw-image* stream 2da-image 250 (- h (clim-image:image-height image) 10)))))
-        (condition (condition)
-          (clim:with-drawing-options (stream :ink +red+)
-            (clim:draw-text* stream "Error" 20 h)
-              (setf h (+ h 30))))))))
-
+      (let ((path
+             (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+        (let* ((image (clim-image:read-image path))
+               (2da-rgba-image (clim-image:coerce-image image 'clim-image:rgba-image))
+               (rgba-image (clim-image:coerce-image 2da-rgba-image 'clim-image:opticl-rgba-image)))
+          (clim-image:draw-image* stream 2da-rgba-image 10 h)
+          (setf h (+ h (clim-image:image-height image) 10))
+          (clim-image:draw-image* stream rgba-image 250 (- h (clim-image:image-height image) 10)))))))
 
 (define-raster-image-test "04) image - translation" (stream)
     "draw-design"
@@ -409,3 +404,103 @@ purple, olive."
               (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
     (setf (clim:output-record-position record) (values 10 300))
     (replay record stream)))
+
+(define-raster-image-test "08) gray - opticl - simple " (stream)
+    "Simple drawing of two dimensional array of pixels: white, black;
+red, green, blue;
+purple, olive."
+   (let* ((image (clim-image:make-opticl-gray-image 90 70))
+         (pixels (clim-image:image-pixels image)))
+    (flet ((draw-rect (color w h)
+             (let ((b (first color))
+                   (g (second color))
+                   (r (third color)))
+               (dotimes (x 90)
+                 (dotimes (y 70)
+                   (setf (opticl:pixel pixels y x) (floor (+ r g b) 3)))))
+             (clim-image:draw-image* stream image w h)))
+      (draw-rect (list #xFF #xFF #xFF) 10 10)
+      (draw-rect (list #x00 #x00 #x00) 110 10)
+      (draw-rect (list #x00 #x00 #xF0) 10 100)
+      (draw-rect (list #x00 #xF0 #x00) 110 100)
+      (draw-rect (list #xF0 #x00 #x00) 210 100)
+      (draw-rect (list #x80 #x00 #x80) 10 200)
+      (draw-rect (list #x80 #x80 #x00) 110 200))))
+
+(define-raster-image-test "08) gray - opticl - coercion " (stream)
+    "Simple loading and coercion."
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      ;;(handler-case
+          (let ((path
+                 (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+            (let ((image (clim-image:read-image path)))
+              (clim-image:draw-image* stream image 10 h)
+              (setf h (+ h (clim-image:image-height image) 10))
+              (let ((2da-image (clim-image:coerce-image image 'clim-image:opticl-gray-image)))
+                (clim-image:draw-image* stream 2da-image 250 (- h (clim-image:image-height image) 10)))))
+      ;;  (condition (condition)
+      ;;    (clim:with-drawing-options (stream :ink +red+)
+       ;;     (clim:draw-text* stream "Error" 20 h)
+          ;;     (setf h (+ h 30))))))))
+          )))
+
+(define-raster-image-test "08) gray - 2 dim arr - coercion " (stream)
+    "Simple loading and coercion."
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      ;;(handler-case
+          (let ((path
+                 (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+            (let ((image (clim-image:read-image path)))
+              (clim-image:draw-image* stream image 10 h)
+              (setf h (+ h (clim-image:image-height image) 10))
+              (let ((2da-image (clim-image:coerce-image image 'clim-image:gray-image)))
+                (clim-image:draw-image* stream 2da-image 250 (- h (clim-image:image-height image) 10)))))
+      ;;  (condition (condition)
+      ;;    (clim:with-drawing-options (stream :ink +red+)
+       ;;     (clim:draw-text* stream "Error" 20 h)
+          ;;     (setf h (+ h 30))))))))
+          )))
+
+(define-raster-image-test "09) stencil - opticl - coercion " (stream)
+    "Simple loading and coercion."
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      ;;(handler-case
+          (let ((path
+                 (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+            (let ((image (clim-image:read-image path)))
+              (clim-image:draw-image* stream image 10 h)
+              (setf h (+ h (clim-image:image-height image) 10))
+              (let* ((stencil-image (clim-image:coerce-image image 'clim-image:opticl-stencil-image))
+                     (gray-image (clim-image:coerce-image stencil-image 'clim-image:opticl-gray-image)))
+                (clim-image:draw-image* stream gray-image 250 (- h (clim-image:image-height image) 10)))))
+      ;;  (condition (condition)
+      ;;    (clim:with-drawing-options (stream :ink +red+)
+       ;;     (clim:draw-text* stream "Error" 20 h)
+          ;;     (setf h (+ h 30))))))))
+          )))
+
+(define-raster-image-test "09) stencil - 2 dim array - coercion " (stream)
+    "Simple loading and coercion."
+  (let ((h 10)
+        (w 10))
+    (dolist (file *opticl-testing-image-files*)
+      ;;(handler-case
+          (let ((path
+                 (uiop/pathname:merge-pathnames* file *opticl-testing-image-directory*)))
+            (let ((image (clim-image:read-image path)))
+              (clim-image:draw-image* stream image 10 h)
+              (setf h (+ h (clim-image:image-height image) 10))
+              (let* ((stencil-image (clim-image:coerce-image image 'clim-image:stencil-image))
+                     (gray-image (clim-image:coerce-image stencil-image 'clim-image:gray-image)))
+                (clim-image:draw-image* stream gray-image 250 (- h (clim-image:image-height image) 10)))))
+      ;;  (condition (condition)
+      ;;    (clim:with-drawing-options (stream :ink +red+)
+       ;;     (clim:draw-text* stream "Error" 20 h)
+          ;;     (setf h (+ h 30))))))))
+          )))

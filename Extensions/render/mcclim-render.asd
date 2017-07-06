@@ -11,7 +11,6 @@
      (:file "vectors-image-ops")
      (:file "2d-image")
      (:file "opticl-image")
-     ;;(:file "recording")
      ))
 
 (defsystem #:mcclim-render

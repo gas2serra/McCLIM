@@ -1,18 +1,10 @@
+
+
 (defpackage :mcclim-raster
   (:nicknames #:clim-image)
-  (:use #:clim #:clim-lisp)
-  (:import-from :climi
-                #:standard-color
-                #:def-grecording
-                #:defmethod*
-                #:output-record-position
-                #:defrecord-predicate
-                #:with-standard-rectangle*
-                #:coordinate=
-                #:if-supplied)
+  (:use)
   (:export
    ;; colors
-   #:octet
    #:color-value->octet
    #:color-octet->value
    #:color-octet-xor
@@ -23,28 +15,20 @@
    #:image
    #:image-width
    #:image-height
-   #:rgb-image-mixin
-   #:drawable-image
-   #:map-rgb-color
    #:draw-image*
    #:medium-draw-image*
    #:image-design
    #:make-image-design
-   #:basic-image
    #:image-pixels
-   #:image-pixels-type
-   #:image-rgb-get-code
-   #:image-rgb-set-code
-   #:image-rgba-get-code
-   #:image-rgba-set-code
    #:image-rgb-get-fn
    #:image-rgb-set-fn
    #:image-rgba-get-fn
    #:image-rgba-set-fn
+   #:image-gray-get-fn
+   #:image-gray-set-fn
+   #:image-alpha-get-fn
+   #:image-alpha-set-fn
    ;; image ops
-   #:mk-rgb-image-primitives
-   #:mk-rgba-image-primitives
-   #:mk-fast-copy-image
    #:read-image
    #:write-image
    #:image-format-read-supported-p
@@ -53,16 +37,75 @@
    #:clone-image
    #:copy-image
    ;; two dimensional array image
-   #:two-dim-array-image
-   #:rgb-image-pixels
    #:rgb-image
    #:make-rgb-image
+   #:rgba-image
+   #:make-rgba-image
+   #:gray-image
+   #:make-gray-image
+   #:stencil-image
+   #:make-stencil-image
+   ;; opticl image
+   #:opticl-rgb-image
+   #:make-opticl-rgb-image
+   #:opticl-rgba-image
+   #:make-opticl-rgba-image
+   #:opticl-gray-image
+   #:make-opticl-gray-image
+   #:opticl-stencil-image
+   #:make-opticl-stencil-image
+   ))
+
+(defpackage :mcclim-raster-extensions
+  (:use)
+  (:export
+   ;; colors
+   #:octet
+   ;; image
+   #:rgb-image-mixin
+   #:rgba-image-mixin
+   #:gray-image-mixin
+   #:stencil-image-mixin
+   #:drawable-image
+   #:map-rgb-color
+   #:basic-image
+   #:image-pixels-type
+   #:image-rgb-get-code
+   #:image-rgb-set-code
+   #:image-rgba-get-code
+   #:image-rgba-set-code
+   #:image-gray-get-code
+   #:image-gray-set-code
+   #:image-alpha-get-code
+   #:image-alpha-set-code
+   ;; image ops
+   #:def-rgb-image-primitives
+   #:def-rgba-image-primitives
+   #:def-gray-image-primitives
+   #:def-stencil-image-primitives
+   #:def-fast-copy-to-rgb-image
+   ;; two dimensional array image
+   #:two-dim-array-image
+   #:rgb-image-pixels
+   #:rgba-image-pixels
+   #:single-channel-image-pixels
    ;; opticl image
    #:opticl-image
    #:opticl-rgb-image-pixels
-   #:opticl-rgb-image
-   #:make-opticl-rgb-image
    #:opticl-rgba-image-pixels
-   #:opticl-rgba-image
-   #:make-opticl-rgba-image
+   #:opticl-single-channel-image-pixels
    ))
+
+
+(defpackage :mcclim-raster-internals
+  (:use #:clim #:clim-lisp #:mcclim-raster #:mcclim-raster-extensions)
+  (:import-from :clim-internals
+                #:standard-color
+                #:def-grecording
+                #:defmethod*
+                #:output-record-position
+                #:defrecord-predicate
+                #:with-standard-rectangle*
+                #:coordinate=
+                #:if-supplied)
+  (:export))

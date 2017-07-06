@@ -1,4 +1,4 @@
-(in-package :mcclim-raster)
+(in-package :mcclim-raster-internals)
 
 ;;;
 ;;; Image
@@ -7,10 +7,19 @@
   ((width :initform 0 :initarg :width :accessor image-width :type fixnum)
    (height :initform 0 :initarg :height :accessor image-height :type fixnum)))
 
-(defclass rgb-image-mixin ()
+(defclass image-mixin ()
   ())
 
-(defclass rgba-image-mixin ()
+(defclass rgb-image-mixin (image-mixin)
+  ())
+
+(defclass rgba-image-mixin (image-mixin)
+  ())
+
+(defclass gray-image-mixin (image-mixin)
+  ())
+
+(defclass stencil-image-mixin (image-mixin)
   ())
 
 ;;;
@@ -69,13 +78,21 @@
                                  red-var grren-var blue-var alpha-var))
 
 (deftype image-rgb-get-fn () '(function (fixnum fixnum) (values octet octet octet)))
-(deftype image-rgba-get-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
 (deftype image-rgb-set-fn () '(function (fixnum fixnum octet octet octet)))
+(deftype image-rgba-get-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
 (deftype image-rgba-set-fn () '(function (fixnum fixnum octet octet octet octet)))
+(deftype image-gray-get-fn () '(function (fixnum fixnum) octet))
+(deftype image-gray-set-fn () '(function (fixnum fixnum octet )))
+(deftype image-alpha-get-fn () '(function (fixnum fixnum) octet))
+(deftype image-alpha-set-fn () '(function (fixnum fixnum octet )))
 (defgeneric image-rgb-get-fn (image &key dx dy region))
 (defgeneric image-rgb-set-fn (image &key dx dy))
 (defgeneric image-rgba-get-fn (image &key dx dy region))
 (defgeneric image-rgba-set-fn (image &key dx dy))
+(defgeneric image-gray-get-fn (image &key dx dy region))
+(defgeneric image-gray-set-fn (image &key dx dy))
+(defgeneric image-alpha-get-fn (image &key dx dy region))
+(defgeneric image-alpha-set-fn (image &key dx dy))
 
 ;;;
 ;;; image I/O
@@ -125,9 +142,10 @@ file to be read.")
   (not (null (gethash format *image-file-writer*))))
 
 (defmethod write-image (image destination &key format quality)
+  (declare (ignorable quality))
   (unless format
     (setf format (intern (string-upcase
-                          (pathname-type (pathname pathname)))
+                          (pathname-type (pathname destination)))
                          (find-package :keyword))))
   (if (image-format-write-supported-p format)
       (funcall (gethash format *image-file-writer*)
