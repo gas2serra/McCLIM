@@ -94,7 +94,11 @@
                                    (dpb ,red-var (byte 8 0)
                                         (dpb ,green-var (byte 8 8)
                                              (dpb ,blue-var (byte 8 16)
-                                                  (dpb ,alpha-var (byte 8 24) 0)))))))
+                                                  (dpb ,alpha-var (byte 8 24) 0)))))
+                            `(setf (aref ,pixels-var ,y-var ,x-var)
+                                   (dpb ,alpha-var (byte 8 24)
+                                        (aref ,pixels-var ,y-var ,x-var)))))
+
 
 (def-rgba-image-functions rgba-image)
 

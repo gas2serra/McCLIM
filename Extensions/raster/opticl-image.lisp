@@ -65,7 +65,12 @@
                             pixels-var x-var y-var red-var green-var blue-var alpha-var
                             `(opticl:pixel ,pixels-var ,y-var ,x-var)
                             `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                   (values ,red-var ,green-var ,blue-var ,alpha-var))))
+                                   (values ,red-var ,green-var ,blue-var ,alpha-var))
+                            `(multiple-value-bind (rr gg bb aa)
+                                 (opticl:pixel ,pixels-var ,y-var ,x-var)
+                               (declare (ignore aa))
+                               (setf (opticl:pixel ,pixels-var ,y-var ,x-var)
+                                     (values rr gg bb ,alpha-var)))))
 
 (def-rgba-image-functions opticl-rgba-image)
 

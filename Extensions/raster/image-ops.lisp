@@ -84,9 +84,8 @@
       (do-copy-image src-img sx sy width height dst-img x y (i j)
         (funcall dst-set-fn i j (funcall src-get-fn i j))))))
 
-
-(defmethod copy-image ((src-img image-mixin) sx sy width height
-                       (dst-img stencil-image-mixin) x y)
+(defmethod copy-image ((src-img alpha-channel-image-mixin) sx sy width height
+                       (dst-img alpha-channel-image-mixin) x y)
   (declare (type fixnum sx sy width height x y))
   (let ((dy (- sy y))
         (dx (- sx x)))

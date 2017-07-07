@@ -5,12 +5,6 @@
   (:use)
   (:export
    ;; colors
-   #:octet-rgba-blend-function
-   #:octet-rgb-blend-function
-   #:octet-gray-blend-function
-   #:octet-alpha-blend-function
-   #:color-value->octet
-   #:color-octet->value
    #:color->octets
    ;; image
    #:image
@@ -73,6 +67,12 @@
    #:color-octet-xor
    #:octet-mult
    #:octet-blend-function
+   #:octet-rgba-blend-function
+   #:octet-rgb-blend-function
+   #:octet-gray-blend-function
+   #:octet-alpha-blend-function
+   #:color-value->octet
+   #:color-octet->value
    ;; image
    #:rgb-image-mixin
    #:rgba-image-mixin
@@ -90,6 +90,7 @@
    #:image-rgba-blend-code
    #:image-gray-get-code
    #:image-gray-set-code
+   #:image-gray-alpha-get-code
    #:image-gray-blend-code
    #:image-alpha-get-code
    #:image-alpha-set-code

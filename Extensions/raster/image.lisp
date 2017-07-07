@@ -10,16 +10,19 @@
 (defclass image-mixin ()
   ())
 
+(defclass alpha-channel-image-mixin (image-mixin)
+  ())
+
 (defclass rgb-image-mixin (image-mixin)
   ())
 
-(defclass rgba-image-mixin (image-mixin)
+(defclass rgba-image-mixin (alpha-channel-image-mixin)
   ())
 
 (defclass gray-image-mixin (image-mixin)
   ())
 
-(defclass stencil-image-mixin (image-mixin)
+(defclass stencil-image-mixin (alpha-channel-image-mixin)
   ())
 
 ;;;
@@ -81,6 +84,7 @@
 (defgeneric image-rgba-blend-code (image-class pixels-var x-var y-var
                                    red-var green-var blue-var alpha-var))
 (defgeneric image-gray-get-code (image-class pixels-var x-var y-var))
+(defgeneric image-gray-alpha-get-code (image-class pixels-var x-var y-var))
 (defgeneric image-gray-set-code (image-class pixels-var x-var y-var
                                  gray-var))
 (defgeneric image-gray-blend-code (image-class pixels-var x-var y-var
@@ -89,7 +93,7 @@
 (defgeneric image-alpha-set-code (image-class pixels-var x-var y-var
                                  gray-var))
 (defgeneric image-alpha-blend-code (image-class pixels-var x-var y-var
-                                   gray-var alpha-var))
+                                   alpha-var))
 
 (deftype image-rgb-get-fn () '(function (fixnum fixnum) (values octet octet octet)))
 (deftype image-rgb-set-fn () '(function (fixnum fixnum octet octet octet)))
@@ -179,7 +183,6 @@ file to be read.")
 ;;;
 ;;; Image operations
 ;;;
-
 
 (defgeneric coerce-image (image image-class))
 (defgeneric clone-image (image image-class))
