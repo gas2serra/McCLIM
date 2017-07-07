@@ -51,7 +51,6 @@
                                                  (dpb 255 (byte 8 24) 0)))))))
 
 (def-rgb-image-functions rgb-image)
-(def-fast-copy-to-rgb-image rgb-image rgb-image)
 
 ;;;
 ;;; RGBA
@@ -157,3 +156,9 @@
                                `(setf (aref ,pixels-var ,y-var ,x-var) ,alpha-var)))
 
 (def-stencil-image-functions stencil-image)
+
+;;;
+;;; Optimization
+;;;
+
+(def-fast-rgb-copy-image rgb-image rgb-image)

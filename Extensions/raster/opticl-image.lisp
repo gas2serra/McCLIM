@@ -37,7 +37,6 @@
                                   (values ,red-var ,green-var ,blue-var))))
 
 (def-rgb-image-functions opticl-rgb-image)
-(def-fast-copy-to-rgb-image opticl-rgb-image opticl-rgb-image)
 
 ;;;
 ;;; RGBA
@@ -72,7 +71,7 @@
                                (setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                      (values rr gg bb ,alpha-var)))))
 
-(def-rgba-image-functions opticl-rgba-image)
+(def-fast-rgb-copy-image opticl-rgb-image opticl-rgb-image)
 
 ;;;
 ;;; Single channel
@@ -187,3 +186,19 @@
 (define-opticl-image-file-writer :pbm #'opticl:write-pbm-stream)
 (define-opticl-image-file-writer :pgm #'opticl:write-pgm-stream)
 (define-opticl-image-file-writer :gif #'opticl:write-gif-stream)
+
+;;;
+;;; Optimization
+;;;
+
+(def-fast-rgb-copy-image opticl-rgb-image opticl-rgb-image)
+
+#|
+(def-fast-gray-copy-image opticl-rgb-image opticl-gray-image)
+(def-fast-gray-copy-image opticl-rgb-image gray-image)
+(def-fast-gray-copy-image opticl-gray-image gray-image)
+(def-fast-rgb-copy-image opticl-gray-image rgb-image)
+(def-fast-gray->alpha-copy-image opticl-gray-image opticl-stancil-image)
+(def-fast-alpha-copy-image opticl-stencil-image rgba-image)
+(def-fast-alpha-copy-image opticl-stencil-image opticl-rgba-image)
+|#
