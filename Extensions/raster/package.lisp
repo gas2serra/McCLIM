@@ -36,6 +36,9 @@
    #:coerce-image
    #:clone-image
    #:copy-image
+   #:coerce-alpha-channel
+   #:clone-alpha-channel
+   #:copy-alpha-channel
    #:blend-image
    ;; two dimensional array image
    #:two-dim-array-image
@@ -45,8 +48,6 @@
    #:make-rgba-image
    #:gray-image
    #:make-gray-image
-   #:stencil-image
-   #:make-stencil-image
    ;; opticl image
    #:opticl-image
    #:opticl-rgb-image
@@ -55,8 +56,6 @@
    #:make-opticl-rgba-image
    #:opticl-gray-image
    #:make-opticl-gray-image
-   #:opticl-stencil-image
-   #:make-opticl-stencil-image
    ))
 
 (defpackage :mcclim-raster-extensions
@@ -73,11 +72,23 @@
    #:octet-alpha-blend-function
    #:color-value->octet
    #:color-octet->value
+   #:rgba->rgb
+   #:rgba->gray
+   #:rgba->gray-alpha
+   #:rgba->alpha
+   #:rgb->rgba
+   #:rgb->gray
+   #:rgb->alpha
+   #:gray->rgba
+   #:gray->rgb
+   #:gray->alpha
    ;; image
    #:rgb-image-mixin
    #:rgba-image-mixin
    #:gray-image-mixin
-   #:stencil-image-mixin
+   #:rgba-image-class
+   #:rgb-image-class
+   #:gray-image-class
    #:drawable-image
    #:map-rgb-color
    #:basic-image
@@ -99,7 +110,6 @@
    #:def-rgb-image-primitives
    #:def-rgba-image-primitives
    #:def-gray-image-primitives
-   #:def-stencil-image-primitives
    #:def-fast-copy-to-rgb-image
    ;; two dimensional array image
    #:rgb-image-pixels

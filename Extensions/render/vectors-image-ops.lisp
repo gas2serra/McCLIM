@@ -264,13 +264,13 @@
              (when (clim:region-contains-position-p clip-region x y)
                (setf alpha (min (abs alpha) 255))
                (when (plusp alpha)
-                 ,(image-alpha-set-code image-class 'pixels 'x 'y 'alpha))))
+                 ,(image-gray-set-code image-class 'pixels 'x 'y 'alpha))))
            (lambda (x y alpha)
              (declare (type fixnum x y)
                       (type fixnum alpha))
              (setf alpha (min (abs alpha) 255))
              (when (plusp alpha)
-               ,(image-alpha-set-code image-class 'pixels 'x 'y 'alpha)))))))
+               ,(image-gray-set-code image-class 'pixels 'x 'y 'alpha)))))))
 
 (defmacro make-make-aa-render-alpha-draw-span-fn (image-class)
   `(defmethod make-aa-render-alpha-draw-span-fn ((image ,image-class) clip-region)
@@ -284,14 +284,14 @@
                   (when (clim:region-contains-position-p clip-region x y)
                     (setf alpha (min (abs alpha) 255))
                     (when (plusp alpha)
-                      ,(image-alpha-set-code image-class 'pixels 'x 'y 'alpha)))))
+                      ,(image-gray-set-code image-class 'pixels 'x 'y 'alpha)))))
            (lambda (x1 x2 y alpha)
              (declare (type fixnum x1 x2 y)
                       (type fixnum alpha))
              (setf alpha (min (abs alpha) 255))
              (loop for x from x1 below x2 do
                   (when (plusp alpha)
-                    ,(image-alpha-set-code image-class 'pixels 'x 'y 'alpha))))))))
+                    ,(image-gray-set-code image-class 'pixels 'x 'y 'alpha))))))))
 
 
 

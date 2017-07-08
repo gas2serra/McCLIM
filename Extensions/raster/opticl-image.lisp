@@ -105,29 +105,12 @@
                             pixels-var x-var y-var gray-var alpha-var
                             `(opticl:pixel ,pixels-var ,y-var ,x-var)
                             `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                   ,gray-var)))
+                                   ,gray-var)
+                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
+                                   ,alpha-var)))
+
 
 (def-gray-image-functions opticl-gray-image)
-
-;;;
-;;; Stencil
-;;;
-(defclass opticl-stencil-image (opticl-single-channel-image stencil-image-mixin)
-  ())
-
-(defun make-opticl-stencil-image (width height)
-  (make-instance 'opticl-stencil-image
-                 :width width
-                 :height height))
-
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-stencil-image-primitives opticl-stencil-image opticl-single-channel-image-pixels
-                               pixels-var x-var y-var alpha-var
-                               `(opticl:pixel ,pixels-var ,y-var ,x-var)
-                               `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                      ,alpha-var)))
-
-(def-stencil-image-functions opticl-stencil-image)
 
 ;;;
 ;;; I/O
@@ -188,8 +171,27 @@
 (define-opticl-image-file-writer :gif #'opticl:write-gif-stream)
 
 ;;;
-;;; Optimization
+;;; Configuration & Optimization
 ;;;
+
+(defmethod find-image-class ((image opticl-image) (type (eql :rgba)))
+  'opticl-rgba-image)
+
+(defmethod find-image-class ((image opticl-image) (type (eql :rgb)))
+  'opticl-rgb-image)
+
+(defmethod find-image-class ((image opticl-image) (type (eql :gray)))
+  'opticl-gray-image)
+
+(defmethod find-image-class ((image rgba-image-mixin) (type (eql :opticl)))
+  'opticl-rgba-image)
+
+(defmethod find-image-class ((image rgb-image-mixin) (type (eql :opticl)))
+  'opticl-rgb-image)
+
+(defmethod find-image-class ((image gray-image-mixin) (type (eql :opticl)))
+  'opticl-gray-image)
+
 
 (def-fast-rgb-copy-image opticl-rgb-image opticl-rgb-image)
 
@@ -199,6 +201,4 @@
 (def-fast-gray-copy-image opticl-gray-image gray-image)
 (def-fast-rgb-copy-image opticl-gray-image rgb-image)
 (def-fast-gray->alpha-copy-image opticl-gray-image opticl-stancil-image)
-(def-fast-alpha-copy-image opticl-stencil-image rgba-image)
-(def-fast-alpha-copy-image opticl-stencil-image opticl-rgba-image)
 |#

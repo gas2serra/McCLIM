@@ -48,8 +48,11 @@
 (defgeneric make-aa-render-xor-draw-span-fn (image clip-region pixeled-design))
 
 (defgeneric aa-cells-sweep/rectangle (image design state clip-region))
+(defgeneric aa-cells-alpha-sweep/rectangle (image design state clip-region))
 (defgeneric aa-stroke-paths (image pixeled-design paths line-style state transformation clip-region))
 (defgeneric aa-fill-paths (image pixeled-design paths state transformation clip-region))
+(defgeneric aa-fill-alpha-paths (image pixeled-design paths state transformation clip-region))
+
 
 (defmethod aa-cells-sweep/rectangle ((image rgb-image-mixin) (ink pixeled-design) state clip-region)
   (let ((draw-function nil)
@@ -76,7 +79,7 @@
                                 draw-function
                                 draw-span-function))))
 
-(defmethod aa-cells-sweep/rectangle ((image stencil-image-mixin) ink state clip-region)
+(defmethod aa-cells-alpha-sweep/rectangle ((image gray-image-mixin) ink state clip-region)
   (let ((draw-function nil)
         (draw-span-function nil)
         (current-clip-region
@@ -117,6 +120,17 @@
                             pixeled-design
                             state
                             clip-region))
+
+(defmethod aa-fill-alpha-paths (image pixeled-design paths state transformation clip-region)
+  (vectors::state-reset state)
+  (dolist (path paths)
+    (setf (paths::path-type path) :closed-polyline))
+  (aa-update-state state paths transformation)
+  (aa-cells-alpha-sweep/rectangle image
+                                  pixeled-design
+                                  state
+                                  clip-region))
+
 
 (defun %aa-scanline-sweep (scanline function function-span &key start end)
   "Call FUNCTION for each pixel on the polygon covered by

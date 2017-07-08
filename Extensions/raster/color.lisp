@@ -122,6 +122,13 @@
   (declare (ignore alpha))
   (values (round (+ red green blue) 3)))
 
+(declaim (inline rgba->gray-alpha)
+         (ftype (function (octet octet octet octet)
+			  (values octet octet))
+		rgba->gray-alpha))
+(defun rgba->gray-alpha (red green blue alpha)
+  (values (round (+ red green blue) 3) alpha))
+
 (declaim (inline rgba->alpha)
          (ftype (function (octet octet octet octet)
 			  octet)
@@ -150,8 +157,7 @@
 			  octet)
                 rgb->alpha))
 (defun rgb->alpha (red green blue)
-  (declare (ignore red green blue))
-  255)
+   (rgb->gray red blue green))
 
 ;;; gray->
 (declaim (inline gray->rgba)
@@ -173,29 +179,5 @@
 			  octet)
                 gray->alpha))
 (defun gray->alpha (gray)
-  (declare (ignore gray))
-  255)
+  gray)
 
-;;; alpha ->
-(declaim (inline alpha->rgba)
-         (ftype (function (octet)
-			  (values octet octet octet octet))
-		alpha->rgba))
-(defun alpha->rgba (alpha)
-  (values 255 255 255 alpha))
-
-(declaim (inline alpha->rgb)
-         (ftype (function (octet)
-			  (values octet octet octet))
-		alpha->rgb))
-(defun alpha->rgb (alpha)
-  (declare (ignore alpha))
-  (values 255 255 255))
-
-(declaim (inline alpha->gray)
-         (ftype (function (octet)
-			  octet)
-                alpha->gray))
-(defun alpha->gray (gray)
-  (declare (ignore gray))
-  255)

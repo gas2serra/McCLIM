@@ -7,23 +7,22 @@
   ((width :initform 0 :initarg :width :accessor image-width :type fixnum)
    (height :initform 0 :initarg :height :accessor image-height :type fixnum)))
 
+;;;
+;;; Image mixins
+;;;
 (defclass image-mixin ()
   ())
 
-(defclass alpha-channel-image-mixin (image-mixin)
+(defclass rgba-image-mixin (image-mixin)
   ())
 
 (defclass rgb-image-mixin (image-mixin)
   ())
 
-(defclass rgba-image-mixin (alpha-channel-image-mixin)
-  ())
-
 (defclass gray-image-mixin (image-mixin)
   ())
 
-(defclass stencil-image-mixin (alpha-channel-image-mixin)
-  ())
+(defgeneric find-image-class (image type))
 
 ;;;
 ;;; Drawable Image
@@ -73,51 +72,64 @@
 
 (defgeneric image-pixels-type (image-class))
 
-(defgeneric image-rgb-get-code (image-class pixels-var x-var y-var))
-(defgeneric image-rgb-set-code (image-class pixels-var x-var y-var
-                                red-var green-var blue-var))
-(defgeneric image-rgb-blend-code (image-class pixels-var x-var y-var
-                                  red-var green-var blue-var alpha-var))
+;;rgba
 (defgeneric image-rgba-get-code (image-class pixels-var x-var y-var))
 (defgeneric image-rgba-set-code (image-class pixels-var x-var y-var
                                  red-var green-var blue-var alpha-var))
 (defgeneric image-rgba-blend-code (image-class pixels-var x-var y-var
                                    red-var green-var blue-var alpha-var))
-(defgeneric image-gray-get-code (image-class pixels-var x-var y-var))
 (defgeneric image-gray-alpha-get-code (image-class pixels-var x-var y-var))
+;; rgb
+(defgeneric image-rgb-get-code (image-class pixels-var x-var y-var))
+(defgeneric image-rgb-set-code (image-class pixels-var x-var y-var
+                                red-var green-var blue-var))
+(defgeneric image-rgb-blend-code (image-class pixels-var x-var y-var
+                                  red-var green-var blue-var alpha-var))
+;; gray
+(defgeneric image-gray-get-code (image-class pixels-var x-var y-var))
+
 (defgeneric image-gray-set-code (image-class pixels-var x-var y-var
                                  gray-var))
 (defgeneric image-gray-blend-code (image-class pixels-var x-var y-var
                                    gray-var alpha-var))
+;; alpha
 (defgeneric image-alpha-get-code (image-class pixels-var x-var y-var))
 (defgeneric image-alpha-set-code (image-class pixels-var x-var y-var
                                  gray-var))
 (defgeneric image-alpha-blend-code (image-class pixels-var x-var y-var
-                                   alpha-var))
-
-(deftype image-rgb-get-fn () '(function (fixnum fixnum) (values octet octet octet)))
-(deftype image-rgb-set-fn () '(function (fixnum fixnum octet octet octet)))
-(deftype image-rgb-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
+                                    alpha-var))
+;; rgba
 (deftype image-rgba-get-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
 (deftype image-rgba-set-fn () '(function (fixnum fixnum octet octet octet octet)))
 (deftype image-rgba-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
+(deftype image-gray-alpha-get-fn () '(function (fixnum fixnum) (values octet octet)))
+;; rgb
+(deftype image-rgb-get-fn () '(function (fixnum fixnum) (values octet octet octet)))
+(deftype image-rgb-set-fn () '(function (fixnum fixnum octet octet octet)))
+(deftype image-rgb-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
+;; gray
 (deftype image-gray-get-fn () '(function (fixnum fixnum) octet))
 (deftype image-gray-set-fn () '(function (fixnum fixnum octet)))
 (deftype image-gray-blend-fn () '(function (fixnum fixnum octet octet)))
-(deftype image-gray-alpha-get-fn () '(function (fixnum fixnum) (values octet octet)))
+;; alpha
 (deftype image-alpha-get-fn () '(function (fixnum fixnum) octet))
 (deftype image-alpha-set-fn () '(function (fixnum fixnum octet )))
 (deftype image-alpha-blend-fn () '(function (fixnum fixnum octet octet)))
-(defgeneric image-rgb-get-fn (image &key dx dy region))
-(defgeneric image-rgb-set-fn (image &key dx dy))
-(defgeneric image-rgb-blend-fn (image &key dx dy))
+
+;; rgba
 (defgeneric image-rgba-get-fn (image &key dx dy region))
 (defgeneric image-rgba-set-fn (image &key dx dy))
 (defgeneric image-rgba-blend-fn (image &key dx dy))
+(defgeneric image-gray-alpha-get-fn (image &key dx dy region))
+;; rgb
+(defgeneric image-rgb-get-fn (image &key dx dy region))
+(defgeneric image-rgb-set-fn (image &key dx dy))
+(defgeneric image-rgb-blend-fn (image &key dx dy))
+;; gray
 (defgeneric image-gray-get-fn (image &key dx dy region))
 (defgeneric image-gray-set-fn (image &key dx dy))
 (defgeneric image-gray-blend-fn (image &key dx dy))
-(defgeneric image-gray-alpha-get-fn (image &key dx dy region))
+;; alpha
 (defgeneric image-alpha-get-fn (image &key dx dy region))
 (defgeneric image-alpha-set-fn (image &key dx dy))
 (defgeneric image-alpha-blend-fn (image &key dx dy))
@@ -184,7 +196,31 @@ file to be read.")
 ;;; Image operations
 ;;;
 
-(defgeneric coerce-image (image image-class))
-(defgeneric clone-image (image image-class))
+(defgeneric coerce-image (image image-class)
+  (:method :around ((image image-mixin) image-class)
+           (if (keywordp image-class)
+               (call-next-method image (find-image-class image image-class))
+               (call-next-method))))
+
+(defgeneric clone-image (image image-class)
+  (:method :around ((image image-mixin) image-class)
+           (if (keywordp image-class)
+               (call-next-method image (find-image-class image image-class))
+               (call-next-method))))
+
 (defgeneric copy-image (src-image sx sy width height dst-image x y))
 (defgeneric blend-image (src-image sx sy width height dst-image x y &key alpha))
+
+(defgeneric coerce-alpha-channel (image &optional image-class)
+  (:method :around ((image image-mixin) &optional image-class)
+           (if image-class
+               (call-next-method)
+               (call-next-method image (find-image-class image :gray)))))
+
+(defgeneric clone-alpha-channel (image &optional image-class)
+  (:method :around ((image image-mixin) &optional image-class)
+           (if image-class
+               (call-next-method)
+               (call-next-method image (find-image-class image :gray)))))
+
+(defgeneric copy-alpha-channel (src-image sx sy width height dst-image x y))

@@ -134,31 +134,22 @@
   (def-gray-image-primitives gray-image single-channel-image-pixels
                             pixels-var x-var y-var gray-var alpha-var
                             `(aref ,pixels-var ,y-var ,x-var)
-                            `(setf (aref ,pixels-var ,y-var ,x-var) ,gray-var)))
+                            `(setf (aref ,pixels-var ,y-var ,x-var) ,gray-var)
+                            `(setf (aref ,pixels-var ,y-var ,x-var) ,alpha-var)))
 
 (def-gray-image-functions gray-image)
 
 ;;;
-;;; Stencil
+;;; Configuration & Optimization
 ;;;
-(defclass stencil-image (single-channel-image stencil-image-mixin)
-  ())
 
-(defun make-stencil-image (width height)
-  (make-instance 'stencil-image
-                 :width width
-                 :height height))
+(defmethod find-image-class ((image two-dim-array-image) (type (eql :rgba)))
+  'rgba-image)
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-stencil-image-primitives stencil-image single-channel-image-pixels
-                               pixels-var x-var y-var alpha-var
-                               `(aref ,pixels-var ,y-var ,x-var)
-                               `(setf (aref ,pixels-var ,y-var ,x-var) ,alpha-var)))
+(defmethod find-image-class ((image two-dim-array-image) (type (eql :rgb)))
+  'rgb-image)
 
-(def-stencil-image-functions stencil-image)
-
-;;;
-;;; Optimization
-;;;
+(defmethod find-image-class ((image two-dim-array-image) (type (eql :gray)))
+  'gray-image)
 
 (def-fast-rgb-copy-image rgb-image rgb-image)

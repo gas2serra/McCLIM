@@ -3,8 +3,6 @@
 (defgeneric fill-image (image design stencil &key x y width height 
                                                stencil-dx stencil-dy))
 
-(defgeneric coerce-image (image image-class))
-
 ;;;
 ;;; copy functions
 ;;;

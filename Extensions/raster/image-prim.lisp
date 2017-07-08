@@ -17,6 +17,17 @@
      (defmethod image-alpha-set-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
                                       ,alpha-var)
        ,set-alpha-code)
+     (defmethod image-alpha-blend-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
+                                        ,alpha-var)
+        (let ((r (gensym "red"))
+             (g (gensym "green"))
+             (b (gensym "blue"))
+             (a (gensym "alpha")))
+         `(multiple-value-bind (,r ,g ,b ,a)
+              ,,get-code
+            (multiple-value-bind (,,alpha-var)
+                (octet-alpha-blend-function ,,alpha-var ,a)
+              ,,set-alpha-code))))
      (defmethod image-rgba-blend-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
                                        ,red-var ,green-var ,blue-var ,alpha-var)
        (let ((r (gensym "red"))
@@ -30,7 +41,13 @@
                                            ,r ,g ,b ,a)
               ,,set-code))))
      (defmethod image-rgb-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
-       ,get-code)
+       (let ((r (gensym "red"))
+             (g (gensym "green"))
+             (b (gensym "blue"))
+             (a (gensym "alpha")))
+         `(multiple-value-bind (,r ,g ,b ,a)
+              ,,get-code
+            (rgba->rgb ,r ,g ,b ,a))))
      (defmethod image-gray-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
        (let ((r (gensym "red"))
              (g (gensym "green"))
@@ -47,7 +64,7 @@
              (a (gensym "alpha")))
          `(multiple-value-bind (,r ,g ,b ,a)
               ,,get-code
-            (values (rgba->gray ,r ,g ,b ,a) ,a))))
+            (rgba->gray-alpha ,r ,g ,b ,a))))
      (defmethod image-alpha-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
        (let ((r (gensym "red"))
              (g (gensym "green"))
@@ -106,7 +123,7 @@
        ,set-code)))
 
 (defmacro def-gray-image-primitives (image-class pixels-type pixels-var x-var y-var
-                                    gray-var alpha-var get-code set-code)
+                                    gray-var alpha-var get-code set-code set-alpha-code)
   `(progn
      (defmethod image-pixels-type ((image-class (eql ',image-class)))
        ',pixels-type)
@@ -116,8 +133,16 @@
                                      ,gray-var)
        ,set-code)
      (defmethod image-alpha-set-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
-                                      ,gray-var)
-       ,set-code)
+                                      ,alpha-var)
+       ,set-alpha-code)
+     (defmethod image-alpha-blend-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
+                                        ,alpha-var)
+       (let ((a (gensym "alpha")))
+         `(multiple-value-bind (,a)
+              ,,get-code
+            (multiple-value-bind (,,alpha-var)
+                (octet-alpha-blend-function ,,alpha-var ,a)
+              ,,set-alpha-code))))
      (defmethod image-gray-blend-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
                                        ,gray-var ,alpha-var)
        (let ((g (gensym "gray")))
@@ -131,33 +156,7 @@
      (defmethod image-rgba-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
        `(gray->rgba ,,get-code))
      (defmethod image-alpha-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
-       ,get-code)))
-       ;;`(gray->alpha ,,get-code))))
-
-(defmacro def-stencil-image-primitives (image-class pixels-type pixels-var
-                                       x-var y-var alpha-var get-code set-code)
-  `(progn
-     (defmethod image-pixels-type ((image-class (eql ',image-class)))
-       ',pixels-type)
-     (defmethod image-alpha-set-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
-                                      ,alpha-var)
-       ,set-code)
-     (defmethod image-alpha-blend-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
-                                        ,alpha-var)
-       (let ((a (gensym "alpha")))
-         `(multiple-value-bind (,a)
-              ,,get-code
-            (multiple-value-bind (,,alpha-var)
-                (octet-alpha-blend-function ,,alpha-var ,a)
-              ,,set-code))))
-     (defmethod image-alpha-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
-       ,get-code)
-     (defmethod image-gray-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
-       `(alpha->gray ,,get-code))
-     (defmethod image-rgb-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
-       `(alpha->rgb ,,get-code))
-     (defmethod image-rgba-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
-       `(alpha->rgba ,,get-code))))
+       `(gray->alpha ,,get-code))))
 
 ;;;
 ;;; def image's functions
@@ -280,6 +279,12 @@
          (lambda (x y gray)
            (declare (type fixnum x y gray))
            ,(image-gray-set-code image-class 'pixels '(+ x dx) '(+ y dy) 'gray))))
+     (defmethod image-alpha-set-fn ((image ,image-class) &key (dx 0) (dy 0))
+       (let ((pixels (image-pixels image)))
+         (declare (type ,(image-pixels-type image-class) pixels))
+         (lambda (x y alpha)
+           (declare (type fixnum x y alpha))
+           ,(image-alpha-set-code image-class 'pixels '(+ x dx) '(+ y dy) 'alpha))))
       (defmethod image-gray-blend-fn ((image ,image-class) &key (dx 0) (dy 0))
        (let ((pixels (image-pixels image)))
          (declare (type ,(image-pixels-type image-class) pixels))
@@ -288,18 +293,3 @@
            ,(image-gray-blend-code image-class 'pixels '(+ x dx) '(+ y dy) 'gray 'alpha))))
      (def-image-functions ,image-class)))
 
-(defmacro def-stencil-image-functions (image-class)
-  `(progn
-     (defmethod image-alpha-set-fn ((image ,image-class) &key (dx 0) (dy 0))
-       (let ((pixels (image-pixels image)))
-         (declare (type ,(image-pixels-type image-class) pixels))
-         (lambda (x y alpha)
-           (declare (type fixnum x y alpha))
-           ,(image-alpha-set-code image-class 'pixels '(+ x dx) '(+ y dy) 'alpha))))
-     (defmethod image-alpha-blend-fn ((image ,image-class) &key (dx 0) (dy 0))
-       (let ((pixels (image-pixels image)))
-         (declare (type ,(image-pixels-type image-class) pixels))
-         (lambda (x y alpha)
-           (declare (type fixnum x y alpha))
-           ,(image-alpha-blend-code image-class 'pixels '(+ x dx) '(+ y dy) 'alpha))))
-     (def-image-functions ,image-class)))

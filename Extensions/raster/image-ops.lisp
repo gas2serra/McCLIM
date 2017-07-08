@@ -70,13 +70,8 @@
 (def-copy-image image-mixin rgba-image-mixin image-rgba-get-fn image-rgba-set-fn 4)
 (def-copy-image image-mixin rgb-image-mixin image-rgb-get-fn image-rgb-set-fn 3)
 (def-copy-image image-mixin gray-image-mixin image-gray-get-fn image-gray-set-fn 1)
-(def-copy-image alpha-channel-image-mixin alpha-channel-image-mixin
-  image-alpha-get-fn image-alpha-set-fn 1)
-(def-copy-image stencil-image-mixin gray-image-mixin image-alpha-get-fn image-gray-set-fn 1)
-(def-copy-image gray-image-mixin stencil-image-mixin image-gray-get-fn image-alpha-set-fn 1)
 
 ;; fast copy
-
 (defmacro def-fast-copy-image (src-image-class dst-image-class get-code set-code channels)
   `(defmethod copy-image ((src-img ,src-image-class) sx sy width height
                           (dst-img ,dst-image-class) x y)
@@ -163,37 +158,37 @@
                   (type ,dst-fn dst-set-fn))
          (do-copy-image src-img sx sy width height dst-img x y (i j)
            ,(case channels
-              (4
+              (#x44
                `(multiple-value-bind (red green blue a)
                     (funcall src-get-fn i j)
                   (funcall dst-set-fn i j red green blue (octet-mult a alpha))))
-              (3 `(multiple-value-bind (red green blue)
-                      (funcall src-get-fn i j)
-                    (funcall dst-set-fn i j red green blue alpha)))
-              (2
+              (#x33 `(multiple-value-bind (red green blue)
+                         (funcall src-get-fn i j)
+                       (funcall dst-set-fn i j red green blue alpha)))
+              (#x22
                `(multiple-value-bind (gray a)
-                   (funcall src-get-fn i j)
-                 (funcall dst-set-fn i j gray (octet-mult alpha a))))
-              (1
+                    (funcall src-get-fn i j)
+                  (funcall dst-set-fn i j gray (octet-mult alpha a))))
+              (#x12
                `(funcall dst-set-fn i j (funcall src-get-fn i j) alpha))))))))
 
 (def-blend-image image-mixin rgba-image-mixin
-  image-rgba-get-fn image-rgba-blend-fn 4)
+  image-rgba-get-fn image-rgba-blend-fn #x44)
 
 (def-blend-image image-mixin rgb-image-mixin
-  image-rgb-get-fn image-rgb-blend-fn 3)
+  image-rgb-get-fn image-rgb-blend-fn #x33)
 (def-blend-image rgba-image-mixin rgb-image-mixin
-  image-rgba-get-fn image-rgb-blend-fn 4)
+  image-rgba-get-fn image-rgb-blend-fn #x44)
 
 (def-blend-image image-mixin gray-image-mixin
-  image-gray-get-fn image-gray-blend-fn 2)
+  image-gray-get-fn image-gray-blend-fn #x12)
 (def-blend-image rgba-image-mixin gray-image-mixin
-  image-gray-alpha-get-fn image-gray-blend-fn 2)
+  image-gray-alpha-get-fn image-gray-blend-fn #x22)
 
 ;;;
 ;;; coerce
 ;;;
-(defmethod coerce-image ((image basic-image) image-class)
+(defmethod coerce-image ((image image-mixin) image-class)
   (if (typep image image-class)
       image
       (clone-image image image-class)))
@@ -201,10 +196,49 @@
 ;;;
 ;;; clone
 ;;;
-(defmethod clone-image ((image basic-image) image-class)
+(defmethod clone-image ((image image-mixin) image-class)
   (let ((dest (make-instance image-class
                              :width (image-width image)
                              :height (image-height image))))
     (copy-image image 0 0 (image-width image) (image-height image)
                 dest 0 0)
+    dest))
+
+
+;;;
+;;; alpha channel
+;;;
+(defmethod copy-alpha-channel :around ((src-img image-mixin) sx sy width height
+                                       (dst-img image-mixin) x y)
+  ;; TO FIX: check image bounds
+  (format *debug-io* "#COPY ALPHA: ~A ~A~%" (type-of src-img) (type-of dst-img))
+  (call-next-method src-img (round sx) (round sy) (round width) (round height)
+                    dst-img (round x) (round y)))
+
+(defmacro def-copy-alpha-channel (src-image-class dst-image-class src-fn dst-fn)
+  `(defmethod copy-alpha-channel ((src-img ,src-image-class) sx sy width height
+                                  (dst-img ,dst-image-class) x y)
+     (declare (type fixnum sx sy width height x y))
+     (let ((dy (- sy y))
+           (dx (- sx x)))
+       (let ((src-get-fn (,src-fn src-img :dx dx :dy dy))
+             (dst-set-fn (,dst-fn dst-img)))
+         (declare (type ,src-fn src-get-fn)
+                  (type ,dst-fn dst-set-fn))
+         (do-copy-image src-img sx sy width height dst-img x y (i j)
+                        (funcall dst-set-fn i j (funcall src-get-fn i j)))))))
+
+(def-copy-alpha-channel image-mixin image-mixin image-alpha-get-fn image-alpha-set-fn)
+
+(defmethod coerce-alpha-channel ((image image-mixin) &optional image-class)
+  (if (typep image image-class)
+      image
+      (clone-alpha-channel image image-class)))
+
+(defmethod clone-alpha-channel ((image image-mixin) &optional image-class)
+  (let ((dest (make-instance image-class
+                             :width (image-width image)
+                             :height (image-height image))))
+    (copy-alpha-channel image 0 0 (image-width image) (image-height image)
+                        dest 0 0)
     dest))

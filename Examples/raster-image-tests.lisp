@@ -192,7 +192,7 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:coerce-image 
-                   (clim-image:read-image path) 'clim-image:opticl-rgb-image)
+                   (clim-image:read-image path) :rgb)
                   image-class)))
       (clim-image:draw-image* stream image 10 h))))
 
@@ -200,15 +200,20 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:coerce-image 
-                   (clim-image:read-image path) 'clim-image:opticl-gray-image)
+                   (clim-image:read-image path) :gray)
                   image-class)))
-      (clim-image:draw-image* stream image 10 h))))
+      (clim-image:draw-image* stream
+                              (clim-image:coerce-image image :rgb)
+                              10 10)
+      (clim-image:draw-image* stream
+                              (clim-image:coerce-image image :gray)
+                              10 360))))
 
 (defun raster-image-test-05 (stream image-class transformation)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:coerce-image 
-                   (clim-image:read-image path) 'clim-image:opticl-rgb-image)
+                   (clim-image:read-image path) :rgb)
                   image-class)))
       (clim-image:draw-image* stream image 0 0
                               :transformation transformation))))
@@ -217,7 +222,7 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:coerce-image 
-                   (clim-image:read-image path) 'clim-image:opticl-rgb-image)
+                   (clim-image:read-image path) :rgb)
                   image-class)))
       (with-bounding-rectangle* (x1 y1 x2 y2)
           clipping-region
@@ -233,7 +238,7 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:coerce-image 
-                   (clim-image:read-image path) 'clim-image:opticl-rgb-image)
+                   (clim-image:read-image path) :rgb)
                   image-class)))
       (draw-design stream (clim-image:make-image-design image) :x 10 :y h))))
 
@@ -241,7 +246,7 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:coerce-image 
-                   (clim-image:read-image path) 'clim-image:opticl-rgb-image)
+                   (clim-image:read-image path) :rgb)
                   image-class)))
       (draw-design stream (clim-image:make-image-design image) :x 0 :y 0
                    :transformation transformation))))
@@ -250,7 +255,7 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:coerce-image 
-                   (clim-image:read-image path) 'clim-image:opticl-rgb-image)
+                   (clim-image:read-image path) :rgb)
                   image-class)))
       (with-bounding-rectangle* (x1 y1 x2 y2)
           clipping-region
@@ -265,16 +270,13 @@
 (defun raster-image-test-12 (stream image-class w h color)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
     (let* ((alpha-image
-            (clim-image:coerce-image 
-             (clim-image:coerce-image 
-              (clim-image:read-image path)
-              'clim-image:opticl-gray-image)
-             'clim-image:opticl-stencil-image))
+            (clim-image:coerce-alpha-channel 
+              (clim-image:read-image path)))
            (image (raster-image-test-make-rgba-image image-class
                                                      (clim-image:image-width alpha-image)
                                                      (clim-image:image-height alpha-image)
                                                      color)))
-      (clim-image:copy-image alpha-image
+      (clim-image:copy-alpha-channel alpha-image
                              0 0
                              (clim-image:image-width alpha-image)
                              (clim-image:image-height alpha-image)
@@ -285,11 +287,8 @@
 (defun raster-image-test-13 (stream fg-image-class bg-image-class w h alpha)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
     (let* ((alpha-image
-            (clim-image:coerce-image 
-             (clim-image:coerce-image 
-              (clim-image:read-image path)
-              'clim-image:opticl-gray-image)
-             'clim-image:opticl-stencil-image))
+            (clim-image:coerce-alpha-channel 
+              (clim-image:read-image path)))
            (image
             (clim-image:coerce-image (raster-image-test-make-rgba-image 'clim-image:rgba-image
                                                      (clim-image:image-width alpha-image)
@@ -300,10 +299,10 @@
             (clim-image:coerce-image (raster-image-test-make-rgba-image 'clim-image:rgba-image
                                                              (clim-image:image-width alpha-image)
                                                              (clim-image:image-height alpha-image)
-                                                             +green+)
+                                                             +yellow+)
                           bg-image-class)))
 
-      (clim-image:copy-image alpha-image
+      (clim-image:copy-alpha-channel alpha-image
                              0 0
                              (clim-image:image-width alpha-image)
                              (clim-image:image-height alpha-image)
@@ -354,14 +353,12 @@ purple, olive."
 
 (define-raster-image-test "op - 04) read gray" (stream)
     ""
-  (raster-image-test-04 stream 'clim-image:opticl-gray-image 10)
-  (raster-image-test-04 stream 'clim-image:opticl-rgb-image 360))
+  (raster-image-test-04 stream :opticl 10))
 
   
 (define-raster-image-test "2d - 04) read gray" (stream)
     ""
-  (raster-image-test-04 stream 'clim-image:gray-image 10)
-  (raster-image-test-04 stream 'clim-image:rgb-image 360))
+  (raster-image-test-04 stream :two-dim-array 10))
 
 (define-raster-image-test "op - 05) translate " (stream)
     ""
