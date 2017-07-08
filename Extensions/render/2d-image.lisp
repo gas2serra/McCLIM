@@ -25,7 +25,7 @@
 (make-fill-image-without-stencil rgb-image)
 ;;(make-fill-image-with-stencil rgb-image 2d-stencil-image)
 
-(defmethod coerce-image ((image basic-image) (image-class (eql 'mcclim-image::rgb-image)))
+(defmethod coerce-image ((image basic-image) (image-class (eql 'mcclim-image::rgb-image)) &optional image-family)
   (if (typep image 'mcclim-image::rgb-image)
       image
       (let ((img (coerce-image image 'rgb-image)))
@@ -34,7 +34,7 @@
                        :height (image-height img)
                        :data (image-pixels img)))))
 
-(defmethod coerce-image ((image mcclim-image::rgb-image) (image-class (eql 'rgb-image)))
+(defmethod coerce-image ((image mcclim-image::rgb-image) (image-class (eql 'rgb-image)) &optional image-family)
   (make-instance 'rgb-image
                  :width (mcclim-image::image-width image)
                  :height (mcclim-image::image-height image)

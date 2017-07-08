@@ -122,7 +122,7 @@
     image))
 
 (defun raster-image-test-make-rgb-image-op (w h color)
-  (let* ((image (clim-image:make-opticl-rgb-image w h))
+  (let* ((image (clim-image:make-image :rgb w h :opticl))
          (pixels (clim-image:image-pixels image)))
     (let ((b (first color))
           (g (second color))
@@ -191,17 +191,15 @@
 (defun raster-image-test-03 (stream image-class h)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
-                  (clim-image:coerce-image 
-                   (clim-image:read-image path) :rgb)
+                  (clim-image:read-image path :image-class :rgb)
                   image-class)))
       (clim-image:draw-image* stream image 10 h))))
 
 (defun raster-image-test-04 (stream image-class h)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
-                  (clim-image:coerce-image 
-                   (clim-image:read-image path) :gray)
-                  image-class)))
+                  (clim-image:read-image path :image-class :gray)
+                  nil image-class)))
       (clim-image:draw-image* stream
                               (clim-image:coerce-image image :rgb)
                               10 10)
@@ -212,8 +210,7 @@
 (defun raster-image-test-05 (stream image-class transformation)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
-                  (clim-image:coerce-image 
-                   (clim-image:read-image path) :rgb)
+                  (clim-image:read-image path :image-class :rgb)
                   image-class)))
       (clim-image:draw-image* stream image 0 0
                               :transformation transformation))))
@@ -221,8 +218,7 @@
 (defun raster-image-test-06 (stream image-class transformation clipping-region)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
-                  (clim-image:coerce-image 
-                   (clim-image:read-image path) :rgb)
+                  (clim-image:read-image path :image-class :rgb)
                   image-class)))
       (with-bounding-rectangle* (x1 y1 x2 y2)
           clipping-region
@@ -237,16 +233,14 @@
 (defun raster-image-test-08 (stream image-class h)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
-                  (clim-image:coerce-image 
-                   (clim-image:read-image path) :rgb)
+                  (clim-image:read-image path :image-class :rgb)
                   image-class)))
       (draw-design stream (clim-image:make-image-design image) :x 10 :y h))))
 
 (defun raster-image-test-09 (stream image-class transformation)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
-                  (clim-image:coerce-image 
-                   (clim-image:read-image path) :rgb)
+                  (clim-image:read-image path :image-class :rgb)
                   image-class)))
       (draw-design stream (clim-image:make-image-design image) :x 0 :y 0
                    :transformation transformation))))
@@ -254,8 +248,7 @@
 (defun raster-image-test-10 (stream image-class transformation clipping-region)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
-                  (clim-image:coerce-image 
-                   (clim-image:read-image path) :rgb)
+                  (clim-image:read-image path :image-class :rgb)
                   image-class)))
       (with-bounding-rectangle* (x1 y1 x2 y2)
           clipping-region
@@ -315,6 +308,15 @@
                               bg-image
                               0 0 :alpha alpha)
       (clim-image:draw-image* stream bg-image w h))))
+
+(defun raster-image-test-15 (stream image-class cx cy cw ch w h)
+  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+    (let ((image (clim-image:coerce-image
+                  (clim-image:read-image path :image-class :rgb)
+                  nil image-class)))
+      (clim-image:draw-image* stream
+                              (clim-image:crop-image image cx cy cw ch)
+                              w h))))
 
 (define-raster-image-test "2d - 01) simple rgb" (stream)
     "Simple drawing of two dimensional array of pixels: white, black;
@@ -538,6 +540,27 @@ purple, olive."
                         'clim-image:rgb-image
                         10 360 128))
 
+(define-raster-image-test "op - 15) crop" (stream)
+    ""
+  (raster-image-test-15 stream
+                        :opticl
+                        100 100 100 150
+                        10 10)
+  (raster-image-test-15 stream
+                        :opticl
+                        150 150 150 100
+                        200 10))
+
+(define-raster-image-test "2d - 15) crop" (stream)
+    ""
+  (raster-image-test-15 stream
+                        :two-dim-array
+                        100 100 100 150
+                        10 10)
+  (raster-image-test-15 stream
+                        :two-dim-array
+                        150 150 150 100
+                        200 10))
 
 ;;;
 ;;; indipendent

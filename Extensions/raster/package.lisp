@@ -33,6 +33,7 @@
    #:write-image
    #:image-format-read-supported-p
    #:image-format-write-supported-p
+   #:make-image
    #:coerce-image
    #:clone-image
    #:copy-image
@@ -40,22 +41,17 @@
    #:clone-alpha-channel
    #:copy-alpha-channel
    #:blend-image
+   #:crop-image
    ;; two dimensional array image
    #:two-dim-array-image
    #:rgb-image
-   #:make-rgb-image
    #:rgba-image
-   #:make-rgba-image
    #:gray-image
-   #:make-gray-image
    ;; opticl image
    #:opticl-image
    #:opticl-rgb-image
-   #:make-opticl-rgb-image
    #:opticl-rgba-image
-   #:make-opticl-rgba-image
    #:opticl-gray-image
-   #:make-opticl-gray-image
    ))
 
 (defpackage :mcclim-raster-extensions
@@ -86,9 +82,9 @@
    #:rgb-image-mixin
    #:rgba-image-mixin
    #:gray-image-mixin
-   #:rgba-image-class
-   #:rgb-image-class
-   #:gray-image-class
+   #:find-image-class
+   #:*default-family*
+   #:image-family
    #:drawable-image
    #:map-rgb-color
    #:basic-image

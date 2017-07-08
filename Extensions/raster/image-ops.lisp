@@ -1,6 +1,33 @@
 (in-package :mcclim-raster-internals)
 
 ;;;
+;;; Image I/O
+;;;
+(defmethod read-image (pathname &key format image-class image-family)
+  (unless format
+    (setf format (intern (string-upcase
+                          (pathname-type (pathname pathname)))
+                         (find-package :keyword))))
+  (if (image-format-read-supported-p format)
+      (let ((image (funcall (gethash format *image-file-readers*)
+                            pathname)))
+        (if (or image-class image-family)
+            (coerce-image image image-class image-family)
+            image))
+      (error "image format not supproted, yet")))
+
+(defmethod write-image (image destination &key format quality)
+  (declare (ignorable quality))
+  (unless format
+    (setf format (intern (string-upcase
+                          (pathname-type (pathname destination)))
+                         (find-package :keyword))))
+  (if (image-format-write-supported-p format)
+      (funcall (gethash format *image-file-writer*)
+               image destination)
+      (error "image format not supproted, yet")))
+
+;;;
 ;;; copy functions
 ;;;
 (defmacro do-copy-image (src-img sx sy width height dst-img x y (i-var j-var) &body code)
@@ -186,24 +213,100 @@
   image-gray-alpha-get-fn image-gray-blend-fn #x22)
 
 ;;;
+;;; images type and family
+;;;
+(defmethod make-image :around (image-class-or-type width height &optional (image-family *default-image-family*))
+  (if (keywordp image-class-or-type)
+      (let ((image-class (find-image-class
+                          image-family image-class-or-type)))
+        (call-next-method image-class width height))
+      (call-next-method)))
+
+(defmethod coerce-image :around ((image image-mixin) image-class-or-type &optional image-family)
+  (if (or (keywordp image-class-or-type)
+          (null image-class-or-type))
+      (let ((image-class (find-image-class
+                          (or image-family (image-family image))
+                          (or image-class-or-type (image-type image)))))
+        (call-next-method image image-class))
+      (call-next-method)))
+
+(defmethod clone-image :around ((image image-mixin) image-class-or-type &optional image-family)
+  (if (or (keywordp image-class-or-type)
+          (null image-class-or-type))
+      (let ((image-class (find-image-class
+                          (or image-family (image-family image))
+                          (or image-class-or-type (image-type image)))))
+        (call-next-method image image-class))
+      (call-next-method)))
+
+(defmethod crop-image :around ((image image-mixin) sx sy width height &optional image-class-or-type image-family)
+  (if (or (keywordp image-class-or-type)
+          (null image-class-or-type))
+      (let ((image-class (find-image-class
+                          (or image-family (image-family image))
+                          (or image-class-or-type (image-type image)))))
+        (call-next-method image sx sy width height image-class))
+      (call-next-method)))
+
+(defmethod coerce-alpha-channel :around ((image image-mixin) &optional (image-class-or-type :gray) image-family)
+  (if (or (keywordp image-class-or-type)
+          (null image-class-or-type))
+      (let ((image-class (find-image-class
+                          (or image-family (image-family image))
+                          (or image-class-or-type (image-type image)))))
+        (call-next-method image image-class))
+      (call-next-method)))
+
+(defmethod clone-alpha-channel :around ((image image-mixin) &optional (image-class-or-type :gray) image-family)
+  (if (or (keywordp image-class-or-type)
+          (null image-class-or-type))
+      (let ((image-class (find-image-class
+                          (or image-family (image-family image))
+                          (or image-class-or-type (image-type image)))))
+        (call-next-method image image-class))
+      (call-next-method)))
+
+;;;
+;;; make
+;;;
+(defmethod make-image (image-class-or-type width height &optional image-family)
+  (declare (ignore image-family))
+  (make-instance image-class-or-type
+                 :width width
+                 :height height))
+
+;;;
 ;;; coerce
 ;;;
-(defmethod coerce-image ((image image-mixin) image-class)
-  (if (typep image image-class)
+(defmethod coerce-image ((image image-mixin) image-class-or-type &optional image-family)
+  (declare (ignore image-family))
+  (if (typep image image-class-or-type)
       image
-      (clone-image image image-class)))
+      (clone-image image  image-class-or-type)))
 
 ;;;
 ;;; clone
 ;;;
-(defmethod clone-image ((image image-mixin) image-class)
-  (let ((dest (make-instance image-class
-                             :width (image-width image)
-                             :height (image-height image))))
+(defmethod clone-image ((image image-mixin) image-class-or-type &optional image-family)
+  (declare (ignore image-family))
+  (let ((dest (make-image image-class-or-type
+                          (image-width image)
+                          (image-height image))))
     (copy-image image 0 0 (image-width image) (image-height image)
                 dest 0 0)
     dest))
 
+;;;
+;;; crop
+;;;
+(defmethod crop-image ((image image-mixin) sx sy width height &optional image-class-or-type image-family)
+  (declare (ignore image-family))
+  (let ((dest (make-image (or image-class-or-type (class-of image))
+                          width
+                          height)))
+    (copy-image image sx sy width height dest 0 0)
+    dest))
 
 ;;;
 ;;; alpha channel
@@ -230,15 +333,17 @@
 
 (def-copy-alpha-channel image-mixin image-mixin image-alpha-get-fn image-alpha-set-fn)
 
-(defmethod coerce-alpha-channel ((image image-mixin) &optional image-class)
+(defmethod coerce-alpha-channel ((image image-mixin) &optional image-class image-family)
+  (declare (ignore image-family))
   (if (typep image image-class)
       image
       (clone-alpha-channel image image-class)))
 
-(defmethod clone-alpha-channel ((image image-mixin) &optional image-class)
-  (let ((dest (make-instance image-class
-                             :width (image-width image)
-                             :height (image-height image))))
+(defmethod clone-alpha-channel ((image image-mixin) &optional image-class image-family)
+  (declare (ignore image-family))
+  (let ((dest (make-image image-class
+                          (image-width image)
+                          (image-height image))))
     (copy-alpha-channel image 0 0 (image-width image) (image-height image)
                         dest 0 0)
     dest))
