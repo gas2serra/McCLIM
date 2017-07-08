@@ -71,7 +71,7 @@
                                (setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                      (values rr gg bb ,alpha-var)))))
 
-(def-fast-rgb-copy-image opticl-rgb-image opticl-rgb-image)
+(def-rgba-image-functions opticl-rgba-image)
 
 ;;;
 ;;; Single channel

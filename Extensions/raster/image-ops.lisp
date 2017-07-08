@@ -41,6 +41,7 @@
 (defmethod copy-image :around ((src-img image-mixin) sx sy width height
                                (dst-img image-mixin) x y)
   ;; TO FIX: check image bounds
+  (format *debug-io* "#COPY: ~A ~A~%" (type-of src-img) (type-of dst-img))
   (call-next-method src-img (round sx) (round sy) (round width) (round height)
                     dst-img (round x) (round y)))
 
@@ -63,7 +64,7 @@
               (3 `(multiple-value-bind (red green blue)
                       (funcall src-get-fn i j)
                     (funcall dst-set-fn i j red green blue)))
-              (1 
+              (1
                `(funcall dst-set-fn i j (funcall src-get-fn i j)))))))))
 
 (def-copy-image image-mixin rgba-image-mixin image-rgba-get-fn image-rgba-set-fn 4)
@@ -146,78 +147,48 @@
 (defmethod blend-image :around ((src-img image-mixin) sx sy width height
                                 (dst-img image-mixin) x y &key (alpha 255))
   ;; TO FIX: check image bounds
+  (format *debug-io* "#BLEND: ~A ~A~%" (type-of src-img) (type-of dst-img))
   (call-next-method src-img (round sx) (round sy) (round width) (round height)
                     dst-img (round x) (round y) :alpha (round alpha)))
 
-(defmethod blend-image ((src-img image-mixin) sx sy width height
-                        (dst-img rgba-image-mixin) x y &key alpha)
-  (declare (type fixnum sx sy width height x y))
-  (let ((dy (- sy y))
-        (dx (- sx x)))
-    (let ((src-get-fn (image-rgba-get-fn src-img :dx dx :dy dy))
-          (dst-set-fn (image-rgba-blend-fn dst-img)))
-      (declare (type image-rgba-get-fn src-get-fn)
-               (type image-rgba-blend-fn dst-set-fn))
-      (do-copy-image src-img sx sy width height dst-img x y (i j)
-        (multiple-value-bind (red green blue a)
-            (funcall src-get-fn i j)
-          (funcall dst-set-fn i j red green blue (octet-mult a alpha)))))))
+(defmacro def-blend-image (src-image-class dst-image-class src-fn dst-fn channels)
+  `(defmethod blend-image ((src-img ,src-image-class) sx sy width height
+                           (dst-img ,dst-image-class) x y &key (alpha 255))
+     (declare (type fixnum sx sy width height x y))
+     (let ((dy (- sy y))
+           (dx (- sx x)))
+       (let ((src-get-fn (,src-fn src-img :dx dx :dy dy))
+             (dst-set-fn (,dst-fn dst-img)))
+         (declare (type ,src-fn src-get-fn)
+                  (type ,dst-fn dst-set-fn))
+         (do-copy-image src-img sx sy width height dst-img x y (i j)
+           ,(case channels
+              (4
+               `(multiple-value-bind (red green blue a)
+                    (funcall src-get-fn i j)
+                  (funcall dst-set-fn i j red green blue (octet-mult a alpha))))
+              (3 `(multiple-value-bind (red green blue)
+                      (funcall src-get-fn i j)
+                    (funcall dst-set-fn i j red green blue alpha)))
+              (2
+               `(multiple-value-bind (gray a)
+                   (funcall src-get-fn i j)
+                 (funcall dst-set-fn i j gray (octet-mult alpha a))))
+              (1
+               `(funcall dst-set-fn i j (funcall src-get-fn i j) alpha))))))))
 
-(defmethod blend-image ((src-img image-mixin) sx sy width height
-                        (dst-img rgb-image-mixin) x y &key alpha)
-  (declare (type fixnum sx sy width height x y))
-  (let ((dy (- sy y))
-        (dx (- sx x)))
-    (let ((src-get-fn (image-rgb-get-fn src-img :dx dx :dy dy))
-          (dst-set-fn (image-rgb-blend-fn dst-img)))
-      (declare (type image-rgb-get-fn src-get-fn)
-               (type image-rgb-blend-fn dst-set-fn))
-      (do-copy-image src-img sx sy width height dst-img x y (i j)
-        (multiple-value-bind (red green blue)
-            (funcall src-get-fn i j)
-          (funcall dst-set-fn i j red green blue alpha))))))
+(def-blend-image image-mixin rgba-image-mixin
+  image-rgba-get-fn image-rgba-blend-fn 4)
 
-(defmethod blend-image ((src-img rgba-image-mixin) sx sy width height
-                        (dst-img rgb-image-mixin) x y &key alpha)
-  (declare (type fixnum sx sy width height x y))
-  (let ((dy (- sy y))
-        (dx (- sx x)))
-    (let ((src-get-fn (image-rgba-get-fn src-img :dx dx :dy dy))
-          (dst-set-fn (image-rgb-blend-fn dst-img)))
-      (declare (type image-rgba-get-fn src-get-fn)
-               (type image-rgb-blend-fn dst-set-fn))
-      (do-copy-image src-img sx sy width height dst-img x y (i j)
-        (multiple-value-bind (red green blue a)
-            (funcall src-get-fn i j)
-          (funcall dst-set-fn i j red green blue (octet-mult a alpha)))))))
+(def-blend-image image-mixin rgb-image-mixin
+  image-rgb-get-fn image-rgb-blend-fn 3)
+(def-blend-image rgba-image-mixin rgb-image-mixin
+  image-rgba-get-fn image-rgb-blend-fn 4)
 
-(defmethod blend-image ((src-img image-mixin) sx sy width height
-                        (dst-img gray-image-mixin) x y &key alpha)
-  (declare (type fixnum sx sy width height x y))
-  (let ((dy (- sy y))
-        (dx (- sx x)))
-    (let ((src-get-fn (image-gray-get-fn src-img :dx dx :dy dy))
-          (dst-set-fn (image-gray-blend-fn dst-img)))
-      (declare (type image-gray-get-fn src-get-fn)
-               (type image-gray-blend-fn dst-set-fn))
-      (do-copy-image src-img sx sy width height dst-img x y (i j)
-        (multiple-value-bind (gray)
-            (funcall src-get-fn i j)
-          (funcall dst-set-fn i j gray alpha))))))
-
-(defmethod blend-image ((src-img rgba-image-mixin) sx sy width height
-                        (dst-img gray-image-mixin) x y &key alpha)
-  (declare (type fixnum sx sy width height x y))
-  (let ((dy (- sy y))
-        (dx (- sx x)))
-    (let ((src-get-fn (image-gray-alpha-get-fn src-img :dx dx :dy dy))
-          (dst-set-fn (image-gray-blend-fn dst-img)))
-      (declare (type image-gray-get-fn src-get-fn)
-               (type image-gray-blend-fn dst-set-fn))
-      (do-copy-image src-img sx sy width height dst-img x y (i j)
-        (multiple-value-bind (gray a)
-            (funcall src-get-fn i j)
-          (funcall dst-set-fn i j gray (octet-mult alpha a)))))))
+(def-blend-image image-mixin gray-image-mixin
+  image-gray-get-fn image-gray-blend-fn 2)
+(def-blend-image rgba-image-mixin gray-image-mixin
+  image-gray-alpha-get-fn image-gray-blend-fn 2)
 
 ;;;
 ;;; coerce

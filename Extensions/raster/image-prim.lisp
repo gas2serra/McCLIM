@@ -115,6 +115,9 @@
      (defmethod image-gray-set-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
                                      ,gray-var)
        ,set-code)
+     (defmethod image-alpha-set-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
+                                      ,gray-var)
+       ,set-code)
      (defmethod image-gray-blend-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
                                        ,gray-var ,alpha-var)
        (let ((g (gensym "gray")))
@@ -128,7 +131,8 @@
      (defmethod image-rgba-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
        `(gray->rgba ,,get-code))
      (defmethod image-alpha-get-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var)
-       `(gray->alpha ,,get-code))))
+       ,get-code)))
+       ;;`(gray->alpha ,,get-code))))
 
 (defmacro def-stencil-image-primitives (image-class pixels-type pixels-var
                                        x-var y-var alpha-var get-code set-code)
@@ -169,7 +173,7 @@
          (lambda (x y)
            (declare (type fixnum x y))
            (if (or (not region) (clim:region-contains-position-p region x y))
-               ,(image-rgb-get-code image-class 'pixels '(+ x dx) '(+ y dy))
+               ,(image-rgba-get-code image-class 'pixels '(+ x dx) '(+ y dy))
                (values 0 0 0)))))
      (defmethod image-rgb-get-fn ((image ,image-class) &key (dx 0) (dy 0) (region nil))
        (declare (ignorable dx dy))

@@ -282,7 +282,7 @@
                              0 0)
       (clim-image:draw-image* stream image w h))))
 
-(defun raster-image-test-13 (stream image-class w h alpha)
+(defun raster-image-test-13 (stream fg-image-class bg-image-class w h alpha)
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
     (let* ((alpha-image
             (clim-image:coerce-image 
@@ -290,14 +290,18 @@
               (clim-image:read-image path)
               'clim-image:opticl-gray-image)
              'clim-image:opticl-stencil-image))
-           (image (raster-image-test-make-rgba-image image-class
+           (image
+            (clim-image:coerce-image (raster-image-test-make-rgba-image 'clim-image:rgba-image
                                                      (clim-image:image-width alpha-image)
                                                      (clim-image:image-height alpha-image)
-                                                     +red+))
-           (bg-image (raster-image-test-make-rgba-image image-class
-                                                        (clim-image:image-width alpha-image)
-                                                        (clim-image:image-height alpha-image)
-                                                        +green+)))
+                                                     +red+)
+                          fg-image-class))
+           (bg-image
+            (clim-image:coerce-image (raster-image-test-make-rgba-image 'clim-image:rgba-image
+                                                             (clim-image:image-width alpha-image)
+                                                             (clim-image:image-height alpha-image)
+                                                             +green+)
+                          bg-image-class)))
 
       (clim-image:copy-image alpha-image
                              0 0
@@ -473,13 +477,69 @@ purple, olive."
 
 (define-raster-image-test "op - 13) blend" (stream)
     ""
-  (raster-image-test-13 stream 'clim-image:opticl-rgba-image 10 10 255)
-  (raster-image-test-13 stream 'clim-image:opticl-rgba-image 10 360 128))
+  (raster-image-test-13 stream
+                        'clim-image:opticl-rgba-image 
+                        'clim-image:opticl-rgba-image
+                        10 10 255)
+  (raster-image-test-13 stream
+                        'clim-image:opticl-rgba-image 
+                        'clim-image:opticl-rgba-image
+                        10 360 128))
 
 (define-raster-image-test "2d - 13) blend" (stream)
     ""
-  (raster-image-test-13 stream 'clim-image:rgba-image 10 10 255)
-  (raster-image-test-13 stream 'clim-image:rgba-image 10 360 128))
+  (raster-image-test-13 stream
+                        'clim-image:rgba-image
+                        'clim-image:rgba-image
+                        10 10 255)
+  (raster-image-test-13 stream
+                        'clim-image:rgba-image
+                        'clim-image:rgba-image
+                        10 360 128))
+
+(define-raster-image-test "op - 14) blend gray" (stream)
+    ""
+  (raster-image-test-13 stream
+                        'clim-image:opticl-rgba-image
+                        'clim-image:opticl-gray-image
+                        10 10 255)
+  (raster-image-test-13 stream
+                        'clim-image:opticl-rgba-image
+                        'clim-image:opticl-gray-image
+                        10 360 128))
+
+(define-raster-image-test "2d - 14) blend gray" (stream)
+    ""
+  (raster-image-test-13 stream
+                        'clim-image:rgba-image
+                        'clim-image:gray-image
+                        10 10 255)
+  (raster-image-test-13 stream
+                        'clim-image:rgba-image
+                        'clim-image:gray-image
+                        10 360 128))
+
+(define-raster-image-test "op - 14) blend rgb" (stream)
+    ""
+  (raster-image-test-13 stream
+                        'clim-image:opticl-rgba-image
+                        'clim-image:opticl-rgb-image
+                        10 10 255)
+  (raster-image-test-13 stream
+                        'clim-image:opticl-rgba-image
+                        'clim-image:opticl-rgb-image
+                        10 360 128))
+
+(define-raster-image-test "2d - 14) blend rgb" (stream)
+    ""
+  (raster-image-test-13 stream
+                        'clim-image:rgba-image
+                        'clim-image:rgb-image
+                        10 10 255)
+  (raster-image-test-13 stream
+                        'clim-image:rgba-image
+                        'clim-image:rgb-image
+                        10 360 128))
 
 
 ;;;
