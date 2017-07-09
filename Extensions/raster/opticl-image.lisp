@@ -37,6 +37,8 @@
                                (setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                      (values rr gg bb ,alpha-var)))))
 
+(def-rgba-image-functions opticl-rgba-image)
+
 ;;;
 ;;; RGB
 ;;;
@@ -61,6 +63,8 @@
                               (values r g b 255))
                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                   (values ,red-var ,green-var ,blue-var))))
+
+(def-rgb-image-functions opticl-rgb-image)
 
 ;;;
 ;;; Gray
@@ -87,10 +91,11 @@
                             `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
                                    ,alpha-var)))
 
+(def-gray-image-functions opticl-gray-image)
+
 ;;;
 ;;; Configuration & Optimization
 ;;;
-
 (defmethod find-image-class ((family (eql :opticl)) (type (eql :rgba)))
   'opticl-rgba-image)
 
@@ -100,10 +105,8 @@
 (defmethod find-image-class ((family (eql :opticl)) (type (eql :gray)))
   'opticl-gray-image)
 
-(def-rgba-image-functions opticl-rgba-image)
-(def-rgb-image-functions opticl-rgb-image)
-(def-gray-image-functions opticl-gray-image)
 (def-fast-rgb-copy-image opticl-rgb-image opticl-rgb-image)
+(def-fast-copy-alpha-channel opticl-gray-image opticl-rgba-image)
 
 #|
 (def-fast-gray-copy-image opticl-rgb-image opticl-gray-image)

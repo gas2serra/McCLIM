@@ -114,7 +114,7 @@
     'raster-image-tests)))
 
 (defun raster-image-test-make-rgb-image-2d (w h color)
-  (let* ((image (clim-image:make-rgb-image w h))
+  (let* ((image (clim-image:make-image :rgb w h :two-dim-array))
          (pixels (clim-image:image-pixels image)))
     (dotimes (x w)
       (dotimes (y h)
@@ -199,7 +199,7 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:read-image path :image-class :gray)
-                  nil image-class)))
+                  :default image-class)))
       (clim-image:draw-image* stream
                               (clim-image:coerce-image image :rgb)
                               10 10)
@@ -313,7 +313,7 @@
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
     (let ((image (clim-image:coerce-image
                   (clim-image:read-image path :image-class :rgb)
-                  nil image-class)))
+                  :default image-class)))
       (clim-image:draw-image* stream
                               (clim-image:crop-image image cx cy cw ch)
                               w h))))

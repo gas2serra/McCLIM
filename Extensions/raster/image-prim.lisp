@@ -86,9 +86,9 @@
      (defmethod image-alpha-blend-code ((image-class (eql ',image-class)) ,pixels-var ,x-var ,y-var
                                         ,alpha-var)
         (let ((r (gensym "red"))
-             (g (gensym "green"))
-             (b (gensym "blue"))
-             (a (gensym "alpha")))
+              (g (gensym "green"))
+              (b (gensym "blue"))
+              (a (gensym "alpha")))
          `(multiple-value-bind (,r ,g ,b ,a)
               ,,get-code
             (multiple-value-bind (,,alpha-var)
@@ -358,4 +358,3 @@
            (declare (type fixnum x y gray alpha))
            ,(image-gray-blend-code image-class 'pixels '(+ x dx) '(+ y dy) 'gray 'alpha))))
      (def-image-functions ,image-class)))
-

@@ -151,18 +151,6 @@
   `(def-fast-copy-image ,src-image-class ,dst-image-class
      image-gray-get-code image-gray-set-code 1))
 
-(defmacro def-fast-alpha-copy-image (src-image-class dst-image-class)
-  `(def-fast-copy-image ,src-image-class ,dst-image-class
-     image-alpha-get-code image-alpha-set-code 1))
-
-(defmacro def-fast-gray->alpha-copy-image (src-image-class dst-image-class)
-  `(def-fast-copy-image ,src-image-class ,dst-image-class
-     image-gray-get-code image-alpha-set-code 1))
-
-(defmacro def-fast-alpha->gray-copy-image (src-image-class dst-image-class)
-  `(def-fast-copy-image ,src-image-class ,dst-image-class
-     image-alpha-get-code image-gray-set-code 1))
-
 ;;;
 ;;; blend functions
 ;;;
@@ -185,85 +173,77 @@
                   (type ,dst-fn dst-set-fn))
          (do-copy-image src-img sx sy width height dst-img x y (i j)
            ,(case channels
-              (#x44
+              (4
                `(multiple-value-bind (red green blue a)
                     (funcall src-get-fn i j)
                   (funcall dst-set-fn i j red green blue (octet-mult a alpha))))
-              (#x33 `(multiple-value-bind (red green blue)
+              (3 `(multiple-value-bind (red green blue)
                          (funcall src-get-fn i j)
                        (funcall dst-set-fn i j red green blue alpha)))
-              (#x22
+              (2
                `(multiple-value-bind (gray a)
                     (funcall src-get-fn i j)
                   (funcall dst-set-fn i j gray (octet-mult alpha a))))
-              (#x12
+              (1
                `(funcall dst-set-fn i j (funcall src-get-fn i j) alpha))))))))
 
 (def-blend-image image-mixin rgba-image-mixin
-  image-rgba-get-fn image-rgba-blend-fn #x44)
-
+  image-rgba-get-fn image-rgba-blend-fn 4)
 (def-blend-image image-mixin rgb-image-mixin
-  image-rgb-get-fn image-rgb-blend-fn #x33)
+  image-rgb-get-fn image-rgb-blend-fn 3)
 (def-blend-image rgba-image-mixin rgb-image-mixin
-  image-rgba-get-fn image-rgb-blend-fn #x44)
-
+  image-rgba-get-fn image-rgb-blend-fn 4)
 (def-blend-image image-mixin gray-image-mixin
-  image-gray-get-fn image-gray-blend-fn #x12)
+  image-gray-get-fn image-gray-blend-fn 1)
 (def-blend-image rgba-image-mixin gray-image-mixin
-  image-gray-alpha-get-fn image-gray-blend-fn #x22)
+  image-gray-alpha-get-fn image-gray-blend-fn 2)
 
 ;;;
 ;;; images type and family
 ;;;
+
+(defun %image-class (image image-class-or-type image-family)
+  (if (keywordp image-class-or-type)
+      (find-image-class
+       (or image-family (image-family image))
+       (if (eql image-class-or-type :default)
+           (image-type image)
+           image-class-or-type))
+      image-class-or-type))
+
 (defmethod make-image :around (image-class-or-type width height &optional (image-family *default-image-family*))
   (if (keywordp image-class-or-type)
-      (let ((image-class (find-image-class
-                          image-family image-class-or-type)))
+      (let ((image-class (%image-class nil image-class-or-type image-family)))
         (call-next-method image-class width height))
       (call-next-method)))
 
 (defmethod coerce-image :around ((image image-mixin) image-class-or-type &optional image-family)
-  (if (or (keywordp image-class-or-type)
-          (null image-class-or-type))
-      (let ((image-class (find-image-class
-                          (or image-family (image-family image))
-                          (or image-class-or-type (image-type image)))))
+  (if (keywordp image-class-or-type)
+      (let ((image-class (%image-class image image-class-or-type image-family)))
         (call-next-method image image-class))
       (call-next-method)))
 
 (defmethod clone-image :around ((image image-mixin) image-class-or-type &optional image-family)
-  (if (or (keywordp image-class-or-type)
-          (null image-class-or-type))
-      (let ((image-class (find-image-class
-                          (or image-family (image-family image))
-                          (or image-class-or-type (image-type image)))))
+  (if (keywordp image-class-or-type)
+      (let ((image-class (%image-class image image-class-or-type image-family)))
         (call-next-method image image-class))
       (call-next-method)))
 
 (defmethod crop-image :around ((image image-mixin) sx sy width height &optional image-class-or-type image-family)
-  (if (or (keywordp image-class-or-type)
-          (null image-class-or-type))
-      (let ((image-class (find-image-class
-                          (or image-family (image-family image))
-                          (or image-class-or-type (image-type image)))))
+  (if (keywordp image-class-or-type)
+      (let ((image-class (%image-class image image-class-or-type image-family)))
         (call-next-method image sx sy width height image-class))
       (call-next-method)))
 
 (defmethod coerce-alpha-channel :around ((image image-mixin) &optional (image-class-or-type :gray) image-family)
-  (if (or (keywordp image-class-or-type)
-          (null image-class-or-type))
-      (let ((image-class (find-image-class
-                          (or image-family (image-family image))
-                          (or image-class-or-type (image-type image)))))
+  (if (keywordp image-class-or-type)
+      (let ((image-class (%image-class image image-class-or-type image-family)))
         (call-next-method image image-class))
       (call-next-method)))
 
 (defmethod clone-alpha-channel :around ((image image-mixin) &optional (image-class-or-type :gray) image-family)
-  (if (or (keywordp image-class-or-type)
-          (null image-class-or-type))
-      (let ((image-class (find-image-class
-                          (or image-family (image-family image))
-                          (or image-class-or-type (image-type image)))))
+  (if (keywordp image-class-or-type)
+      (let ((image-class (%image-class image image-class-or-type image-family)))
         (call-next-method image image-class))
       (call-next-method)))
 
@@ -314,24 +294,43 @@
 (defmethod copy-alpha-channel :around ((src-img image-mixin) sx sy width height
                                        (dst-img image-mixin) x y)
   ;; TO FIX: check image bounds
-  (format *debug-io* "#COPY ALPHA: ~A ~A~%" (type-of src-img) (type-of dst-img))
   (call-next-method src-img (round sx) (round sy) (round width) (round height)
                     dst-img (round x) (round y)))
 
-(defmacro def-copy-alpha-channel (src-image-class dst-image-class src-fn dst-fn)
+(defmacro def-copy-alpha-channel (src-image-class dst-image-class)
   `(defmethod copy-alpha-channel ((src-img ,src-image-class) sx sy width height
                                   (dst-img ,dst-image-class) x y)
      (declare (type fixnum sx sy width height x y))
      (let ((dy (- sy y))
            (dx (- sx x)))
-       (let ((src-get-fn (,src-fn src-img :dx dx :dy dy))
-             (dst-set-fn (,dst-fn dst-img)))
-         (declare (type ,src-fn src-get-fn)
-                  (type ,dst-fn dst-set-fn))
+       (format *debug-io* "#COPY ALPHA: ~A ~A~%" (type-of src-img) (type-of dst-img))
+       (let ((src-get-fn (image-alpha-get-fn src-img :dx dx :dy dy))
+             (dst-set-fn (image-alpha-set-fn dst-img)))
+         (declare (type image-alpha-get-fn src-get-fn)
+                  (type image-alpha-set-fn dst-set-fn))
          (do-copy-image src-img sx sy width height dst-img x y (i j)
                         (funcall dst-set-fn i j (funcall src-get-fn i j)))))))
 
-(def-copy-alpha-channel image-mixin image-mixin image-alpha-get-fn image-alpha-set-fn)
+(def-copy-alpha-channel image-mixin image-mixin)
+
+(defmacro def-fast-copy-alpha-channel (src-image-class dst-image-class)
+  `(defmethod copy-alpha-channel ((src-img ,src-image-class) sx sy width height
+                                  (dst-img ,dst-image-class) x y)
+     (declare (type fixnum sx sy width height x y))
+     (let ((src-pixels (image-pixels src-img))
+           (dst-pixels (image-pixels dst-img)))
+       (declare (type ,(image-pixels-type src-image-class) src-pixels)
+                (type ,(image-pixels-type dst-image-class) dst-pixels))
+       (format *debug-io* "#COPY ALPHA FAST: ~A ~A~%" (type-of src-img) (type-of dst-img))
+       (let ((dy (- sy y))
+             (dx (- sx x)))
+         (macrolet ((get-code-m (i j)
+                      (image-alpha-get-code ',src-image-class `src-pixels i j))
+                    (set-code-m (i j v)
+                      (image-alpha-set-code ',dst-image-class `dst-pixels i j v)))
+           (declare (type fixnum dx dy))
+           (do-copy-image src-img sx sy width height dst-img x y (i j)
+                          (set-code-m i j (get-code-m (+ i dx) (+ j dy)))))))))
 
 (defmethod coerce-alpha-channel ((image image-mixin) &optional image-class image-family)
   (declare (ignore image-family))

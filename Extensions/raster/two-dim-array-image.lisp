@@ -46,6 +46,8 @@
                                    (dpb ,alpha-var (byte 8 24)
                                         (aref ,pixels-var ,y-var ,x-var)))))
 
+(def-rgba-image-functions rgba-image)
+
 ;;;
 ;;; RGB
 ;;;
@@ -64,15 +66,6 @@
                         :element-type '(unsigned-byte 32)
                         :initial-element #xFFFFFFFF)))))
 
-(defun make-rgb-image (width height)
-  (let ((data (make-array (list height width)
-                          :element-type '(unsigned-byte 32)
-                          :initial-element #xFFFFFFFF)))
-    (make-instance 'rgb-image
-		   :width width
-		   :height height
-		   :pixels data)))
-
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (def-rgb-image-primitives rgb-image rgb-image-pixels
                            pixels-var x-var y-var red-var green-var blue-var alpha-var
@@ -88,6 +81,8 @@
                                        (dpb ,green-var (byte 8 8)
                                             (dpb ,blue-var (byte 8 16)
                                                  (dpb 255 (byte 8 24) 0)))))))
+
+(def-rgb-image-functions rgb-image)
 
 ;;;
 ;;; Gray
@@ -114,6 +109,9 @@
                             `(setf (aref ,pixels-var ,y-var ,x-var) ,gray-var)
                             `(setf (aref ,pixels-var ,y-var ,x-var) ,alpha-var)))
 
+
+(def-gray-image-functions gray-image)
+
 ;;;
 ;;; Configuration & Optimization
 ;;;
@@ -126,7 +124,4 @@
 (defmethod find-image-class ((family (eql :two-dim-array)) (type (eql :gray)))
   'gray-image)
 
-(def-rgba-image-functions rgba-image)
-(def-rgb-image-functions rgb-image)
-(def-gray-image-functions gray-image)
 (def-fast-rgb-copy-image rgb-image rgb-image)
