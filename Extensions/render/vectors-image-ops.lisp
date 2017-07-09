@@ -7,7 +7,7 @@
   `(progn
      (defmethod make-aa-render-draw-fn ((image ,image-class) clip-region pixeled-design)
        (let ((pixels (image-pixels image))
-             (design-fn (make-pixeled-rgba-octets-fn pixeled-design)))
+             (design-fn (pixeled-rgba-fn pixeled-design)))
          (declare (type ,(image-pixels-type image-class) pixels)
                   (type pixeled-design-fn design-fn))
          (if clip-region
@@ -88,7 +88,7 @@
   `(progn
      (defmethod make-aa-render-draw-span-fn ((image ,image-class) clip-region pixeled-design)
        (let ((pixels (image-pixels image))
-             (design-fn (make-pixeled-rgba-octets-fn pixeled-design)))
+             (design-fn (pixeled-rgba-fn pixeled-design)))
          (declare (type ,(image-pixels-type image-class) pixels)
                   (type pixeled-design-fn design-fn))
          (if clip-region
@@ -173,7 +173,7 @@
 (defmacro make-make-aa-render-xor-draw-fn (image-class)
   `(defmethod make-aa-render-xor-draw-fn ((image ,image-class) clip-region pixeled-design)
      (let ((pixels (image-pixels image))
-           (design-fn (make-pixeled-rgba-octets-fn pixeled-design)))
+           (design-fn (pixeled-rgba-fn pixeled-design)))
        (declare (type ,(image-pixels-type image-class) pixels)
                 (type pixeled-design-fn design-fn))
        (if clip-region
@@ -210,7 +210,7 @@
 (defmacro make-make-aa-render-xor-draw-span-fn (image-class)
   `(defmethod make-aa-render-xor-draw-span-fn ((image ,image-class) clip-region pixeled-design)
      (let ((pixels (image-pixels image))
-           (design-fn (make-pixeled-rgba-octets-fn pixeled-design)))
+           (design-fn (pixeled-rgba-fn pixeled-design)))
        (declare (type ,(image-pixels-type image-class) pixels)
                 (type pixeled-design-fn design-fn))
        (if clip-region

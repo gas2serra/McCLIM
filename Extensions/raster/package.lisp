@@ -28,6 +28,8 @@
    #:image-alpha-get-fn
    #:image-alpha-set-fn
    #:image-alpha-blend-fn
+   ;; design
+   #:make-pixeled-design
    ;; image ops
    #:read-image
    #:write-image
@@ -42,6 +44,7 @@
    #:copy-alpha-channel
    #:blend-image
    #:crop-image
+   #:fill-image
    ;; two dimensional array image
    #:two-dim-array-image
    #:rgb-image
@@ -102,6 +105,16 @@
    #:image-alpha-get-code
    #:image-alpha-set-code
    #:image-alpha-blend-code
+   ;; design
+   #:pixeled-design
+   #:pixeled-uniform-design
+   #:pixeled-uniform-design-red
+   #:pixeled-uniform-design-green
+   #:pixeled-uniform-design-blue
+   #:pixeled-uniform-design-alpha
+   #:pixeled-flipping-design
+   #:pixeled-rgba-fn
+   #:pixeled-design-fn
    ;; image ops
    #:def-rgb-image-primitives
    #:def-rgba-image-primitives
@@ -121,6 +134,26 @@
   (:use #:clim #:clim-lisp #:mcclim-raster #:mcclim-raster-extensions)
   (:import-from :clim-internals
                 #:standard-color
+                #:named-color
+                #:standard-flipping-ink
+                #:%transparent-ink
+                #:standard-opacity
+                #:indexed-pattern
+                #:rectangular-tile
+                #:rectangular-tile-design
+                #:rectangular-tile-width
+                #:rectangular-tile-height
+                #:transformed-design
+                #:transformed-design-design
+                #:transformed-design-transformation
+                #:with-transformed-position
+                #:in-compositum
+                #:out-compositum
+                #:over-compositum
+                #:compositum-ink
+                #:compositum-mask
+                #:compositum-foreground
+                #:compositum-background
                 #:def-grecording
                 #:defmethod*
                 #:output-record-position

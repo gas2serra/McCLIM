@@ -11,7 +11,9 @@
                (:file "color")
                (:file "image")
                (:file "image-prim")
+               (:file "pixeled-design")
                (:file "image-ops")
+               (:file "image-fast-ops")
                (:file "recording")))
 
 (defsystem #:mcclim-raster/two-dim-array

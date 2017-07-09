@@ -108,6 +108,9 @@
 (def-fast-rgb-copy-image opticl-rgb-image opticl-rgb-image)
 (def-fast-copy-alpha-channel opticl-gray-image opticl-rgba-image)
 
+(def-fast-fill-image-without-stencil opticl-rgb-image image-rgb-blend-code 4)
+(def-fast-fill-image-with-stencil opticl-rgb-image image-rgb-blend-code opticl-gray-image 4)
+
 #|
 (def-fast-gray-copy-image opticl-rgb-image opticl-gray-image)
 (def-fast-gray-copy-image opticl-rgb-image gray-image)

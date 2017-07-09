@@ -5,8 +5,6 @@
     :components
     ((:file "package")
      (:file "image")
-     (:file "pixeled-design")
-     (:file "image-ops")
      (:file "vectors")
      (:file "vectors-image-ops")
      (:file "2d-image")

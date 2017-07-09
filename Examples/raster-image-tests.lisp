@@ -318,6 +318,32 @@
                               (clim-image:crop-image image cx cy cw ch)
                               w h))))
 
+(defun raster-image-test-16 (stream image-class design cx cy cw ch w h)
+  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+    (let ((image (clim-image:coerce-image
+                  (clim-image:read-image path :image-class :rgb)
+                  :default image-class))
+          (pixeled-design (clim-image:make-pixeled-design design)))
+      (clim-image:fill-image image pixeled-design nil :x cx :y cy :width cw :height ch)
+      (clim-image:draw-image* stream
+                              image
+                              w h))))
+
+(defun raster-image-test-17 (stream image-class design cx cy cw ch w h)
+  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*))
+        (path2 (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
+    (let ((image (clim-image:coerce-image
+                  (clim-image:read-image path :image-class :rgb)
+                  :default image-class))
+          (pixeled-design (clim-image:make-pixeled-design design))
+          (stencil (clim-image:coerce-alpha-channel
+                    (clim-image:read-image path2))))
+      (clim-image:fill-image image pixeled-design stencil :x cx :y cy :width cw :height ch
+                             :stencil-dx (- cx) :stencil-dy (- cy))
+      (clim-image:draw-image* stream
+                              image
+                              w h))))
+
 (define-raster-image-test "2d - 01) simple rgb" (stream)
     "Simple drawing of two dimensional array of pixels: white, black;
 red, green, blue;
@@ -561,7 +587,56 @@ purple, olive."
                         :two-dim-array
                         150 150 150 100
                         200 10))
+(define-raster-image-test "op - 16) fill color" (stream)
+    ""
+  (raster-image-test-16 stream
+                        :opticl
+                        +red+
+                        100 100 100 150
+                        10 10)
+  (raster-image-test-16 stream
+                        :opticl
+                        (compose-in +green+ (make-opacity 0.5))
+                        150 150 150 100
+                        10 300))
 
+(define-raster-image-test "2d - 16) fill color" (stream)
+    ""
+  (raster-image-test-16 stream
+                        :two-dim-array
+                        +red+
+                        100 100 100 150
+                        10 10)
+  (raster-image-test-16 stream
+                        :two-dim-array
+                        (compose-in +green+ (make-opacity 0.5))
+                        150 150 150 100
+                        10 300))
+(define-raster-image-test "op - 17) fill stencil" (stream)
+    ""
+  (raster-image-test-17 stream
+                        :opticl
+                        +red+
+                        100 100 100 150
+                        10 10)
+  (raster-image-test-17 stream
+                        :opticl
+                        (compose-in +green+ (make-opacity 0.5))
+                        150 150 150 100
+                        10 300))
+
+(define-raster-image-test "2d - 17) fill stencil" (stream)
+    ""
+  (raster-image-test-17 stream
+                        :two-dim-array
+                        +red+
+                        100 100 100 150
+                        10 10)
+  (raster-image-test-17 stream
+                        :two-dim-array
+                        (compose-in +green+ (make-opacity 0.5))
+                        150 150 150 100
+                        10 300))
 ;;;
 ;;; indipendent
 ;;;

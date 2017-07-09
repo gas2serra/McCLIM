@@ -9,7 +9,7 @@
 ;;; Pixeled Design
 ;;;
 
-(defmethod %make-pixeled-design ((ink mcclim-image::rgb-pattern))
+(defmethod mcclim-raster::%make-pixeled-design ((ink mcclim-image::rgb-pattern))
   (let* ((img (slot-value ink 'mcclim-image::image)))
     (make-pixeled-image-design :image
                                (make-instance 'rgb-image
@@ -22,7 +22,7 @@
 ;;;
 
 ;;(make-copy-image rgb-image rgb-image)
-(make-fill-image-without-stencil rgb-image)
+;;(make-fill-image-without-stencil rgb-image)
 ;;(make-fill-image-with-stencil rgb-image 2d-stencil-image)
 
 (defmethod coerce-image ((image basic-image) (image-class (eql 'mcclim-image::rgb-image)) &optional image-family)
