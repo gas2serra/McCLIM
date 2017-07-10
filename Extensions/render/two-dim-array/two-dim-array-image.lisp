@@ -1,4 +1,4 @@
-(in-package :mcclim-raster-internals)
+(in-package :mcclim-render-internals)
 
 ;;;
 ;;; Two dimensional array of pixels

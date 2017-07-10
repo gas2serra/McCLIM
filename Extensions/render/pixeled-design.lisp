@@ -1,4 +1,4 @@
-(in-package :mcclim-raster-internals)
+(in-package :mcclim-render-internals)
 
 (deftype pixeled-design-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
 

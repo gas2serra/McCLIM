@@ -1,5 +1,5 @@
 
-(in-package :mcclim-render)
+(in-package :mcclim-render-internals)
 
 (defclass image-mirror-mixin ()
   ((image :initform nil :reader image-mirror-image)

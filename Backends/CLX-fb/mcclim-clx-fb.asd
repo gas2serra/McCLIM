@@ -4,7 +4,7 @@
 		 #:mcclim-clx/input
 		 #:mcclim-single-mirrored-standard
 		 #:mcclim-render
-                 #:mcclim-raster/clx)
+                 #:mcclim-render/clx)
   :components
   ((:file "package")
    (:file "port" :depends-on ("package" "medium"))

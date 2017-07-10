@@ -1,4 +1,4 @@
-(in-package :mcclim-raster-internals)
+(in-package :mcclim-render-internals)
 
 (def-grecording draw-image (() image x y) ()
   (let ((width (image-width image))

@@ -1,4 +1,4 @@
-(in-package :mcclim-render)
+(in-package :mcclim-render-internals)
 
 (defclass render-medium-mixin (basic-medium)
   ())
@@ -347,7 +347,7 @@
                                     min-x min-y)))))))))
 
 (defmethod medium-draw-image-design* ((medium render-medium-mixin)
-				      (design rgb-image-design) to-x to-y)
+				      (design mcclim-image::rgb-image-design) to-x to-y)
   (let* ((image (slot-value design 'mcclim-image::image))
 	 (width (mcclim-image::image-width image))
 	 (height (mcclim-image::image-height image))

@@ -1,4 +1,4 @@
-(in-package :mcclim-render)
+(in-package :mcclim-render-internals)
 
 (defclass opticl-rgb-image-mirror-mixin (image-mirror-mixin)
   ())

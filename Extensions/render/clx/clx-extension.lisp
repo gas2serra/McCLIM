@@ -1,4 +1,4 @@
-(in-package :mcclim-raster-internals)
+(in-package :mcclim-render-internals)
 
 (use-package :clim-clx)
 
@@ -64,7 +64,7 @@
                                     :depth  depth
 				    :bits-per-pixel 32
                                     :data   xdata)))
-    (mcclim-render::map-rgb-color image #'(lambda (x y r g b)
+    (map-rgb-color image #'(lambda (x y r g b)
                              (setf (aref xdata y x)
                                    (funcall translator
                                             x y

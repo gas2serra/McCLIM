@@ -1,7 +1,7 @@
 
 (defsystem #:mcclim-raster-image
     :depends-on (#:mcclim-render
-                 #:mcclim-raster/clx
+                 #:mcclim-render/clx
 		 #:mcclim-single-mirrored-standard)
     :serial t
     :components
