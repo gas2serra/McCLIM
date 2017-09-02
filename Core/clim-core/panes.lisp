@@ -248,12 +248,12 @@ order to produce a double-click")
   (assert (<= 0 min-width width max-width) (min-width width max-width))
   (assert (<= 0 min-height height max-height) (min-height height max-height))
   (make-instance 'standard-space-requirement
-    :width width
-    :max-width max-width
-    :min-width min-width
-    :height height
-    :max-height max-height
-    :min-height min-height))
+    :width (ceiling width)
+    :max-width (ceiling max-width)
+    :min-width (ceiling min-width)
+    :height (ceiling height)
+    :max-height (ceiling max-height)
+    :min-height (ceiling min-height)))
 
 (defmethod space-requirement-components ((space-req standard-space-requirement))
   (with-slots (width min-width max-width height min-height max-height) space-req
@@ -837,10 +837,10 @@ order to produce a double-click")
   (move-sheet pane (round x) (round y)))
 
 (defmethod %resize-pane ((pane basic-pane) w h)
-  (resize-sheet pane (floor w) (floor h)))
+  (resize-sheet pane (ceiling w) (ceiling h)))
 
 (defmethod %move-and-resize-pane ((pane basic-pane) x y w h)
-  (move-and-resize-sheet pane (round x) (round y) (floor w) (floor h)))
+  (move-and-resize-sheet pane (round x) (round y) (ceiling w) (ceiling h)))
 
 ;;;;
 ;;;; Composite Panes
