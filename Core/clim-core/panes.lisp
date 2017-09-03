@@ -837,10 +837,10 @@ order to produce a double-click")
   (move-sheet pane (round x) (round y)))
 
 (defmethod %resize-pane ((pane basic-pane) w h)
-  (resize-sheet pane (floor w) (floor h)))
+  (resize-sheet pane (ceiling w) (ceiling h)))
 
 (defmethod %move-and-resize-pane ((pane basic-pane) x y w h)
-  (move-and-resize-sheet pane (round x) (round y) (floor w) (floor h)))
+  (move-and-resize-sheet pane (round x) (round y) (ceiling w) (ceiling h)))
 
 ;;;;
 ;;;; Composite Panes
@@ -1169,7 +1169,7 @@ order to produce a double-click")
      (with-slots (major-spacing) box
        (let* ((content-srs (mapcar #'(lambda (c) (xically-content-sr*** box c major))
                                    (box-layout-mixin-clients box)))
-              (allot       (mapcar #'space-requirement-major content-srs))
+              (allot       (mapcar #'ceiling (mapcar #'space-requirement-major content-srs)))
               (wanted      (reduce #'+ allot))
               (excess      (- major wanted
                               (* (1- (length children)) major-spacing))))
@@ -1206,7 +1206,7 @@ order to produce a double-click")
                  (setf allot
                        (mapcar (lambda (allot q)
                                  (let ((q (elt q j)))
-                                   (let ((delta (if (zerop sum) 0 (/ (* excess q) sum))))
+                                   (let ((delta (ceiling (if (zerop sum) 0 (/ (* excess q) sum)))))
                                      (decf excess delta)
                                      (decf sum q)
                                      (+ allot delta))))
@@ -1219,7 +1219,7 @@ order to produce a double-click")
 	     (format *trace-output* "~&;;   new allotment = ~S.~%" allot))
 
            (values allot
-                   (mapcar #'space-requirement-minor content-srs))) ))))
+                   (mapcar #'ceiling (mapcar #'space-requirement-minor content-srs))) )))))
 
  (defmethod box-layout-mixin/xically-allocate-space-aux* :around ((box rack-layout-mixin) width height)
    (declare (ignorable width height))
@@ -1484,7 +1484,7 @@ order to produce a double-click")
                    (let ((n (length qs)))
                      (setf allot
                        (mapcar (lambda (allot q)
-                                 (let ((delta (/ excess n)))
+                                 (let ((delta (floor excess n)))
                                    (decf n)
                                    (decf excess delta)
                                    (decf sum q)
@@ -1493,7 +1493,7 @@ order to produce a double-click")
                   (t
                    (setf allot
                      (mapcar (lambda (allot q)
-                               (let ((delta (if (zerop sum) 0 (/ (* excess q) sum))))
+                               (let ((delta (ceiling (if (zerop sum) 0 (/ (* excess q) sum)))))
                                  (decf excess delta)
                                  (decf sum q)
                                  (+ allot delta)))
