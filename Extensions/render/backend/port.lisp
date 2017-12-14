@@ -24,6 +24,9 @@
 ;;;
 ;;; Fonts
 ;;;
+(defmethod text-style-to-font ((port render-port-mixin) (text-style t))
+  (let ((text-style (parse-text-style text-style)))
+    (text-style-to-font port text-style)))
 
 (defmethod text-style-to-font ((port render-port-mixin)
 			       (text-style standard-text-style))
