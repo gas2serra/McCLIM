@@ -230,7 +230,7 @@
 		    (- max-x min-x) (- max-y min-y)
 		    (- (round x1)) (- (round y1)))))))))
   (let ((xfont (text-style-to-font (port medium) (medium-text-style medium))))
-    (let ((size (text-style-size (medium-text-style medium))))
+    (let ((size (text-style-size (parse-text-style (medium-text-style medium)))))
       (setf size   (or size :normal)
 	    size (getf *text-sizes* size size))
       (when (characterp string)
