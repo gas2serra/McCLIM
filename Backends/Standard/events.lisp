@@ -98,8 +98,7 @@ pointer-exit and grab-pointer for non mirrored sheets"))
 	  (t	 
 	   (call-next-method)))))))
 
-
-(defmethod climi::distribute-event ((port standard-handled-event-port-mixin) (event pointer-event))
+(defmethod climi::distribute-event ((port standard-handled-event-port-mixin) (event pointer-button-event))
   (let* ((sheet (port-pointer-sheet port))
 	 (grab-sheet (pointer-grab-sheet port))
 	 (destination (or grab-sheet sheet)))
@@ -127,6 +126,76 @@ pointer-exit and grab-pointer for non mirrored sheets"))
 			     (make-instance (type-of event)
 					    :pointer (slot-value event 'climi::pointer)
 					    :button (slot-value event 'climi::button)
+					    :x cx
+					    :y cy
+					    :graft-x (slot-value event 'climi::graft-x)
+					    :graft-y (slot-value event 'climi::graft-y)
+					    :sheet sheet
+					    :modifier-state (slot-value event 'climi::modifier-state)
+					    :timestamp (slot-value event 'climi::timestamp)))))))))
+
+(defmethod climi::distribute-event ((port standard-handled-event-port-mixin) (event pointer-scroll-event))
+  (let* ((sheet (port-pointer-sheet port))
+	 (grab-sheet (pointer-grab-sheet port))
+	 (destination (or grab-sheet sheet)))
+    (when sheet
+      (cond ((eq sheet (event-sheet event))
+	     (dispatch-event sheet event))
+            ((eq (sheet-mirrored-ancestor sheet) (sheet-mirrored-ancestor (event-sheet event)))
+	     (dispatch-event destination
+			     (make-instance (type-of event)
+					    :pointer (slot-value event 'climi::pointer)
+					    :x (slot-value event 'climi::x)
+					    :y (slot-value event 'climi::y)
+					    :graft-x (slot-value event 'climi::graft-x)
+					    :graft-y (slot-value event 'climi::graft-y)
+                                            :delta-x (slot-value event 'climi::delta-x)
+                                            :delta-y (slot-value event 'climi::delta-y)
+					    :sheet sheet
+					    :modifier-state (slot-value event 'climi::modifier-state)
+					    :timestamp (slot-value event 'climi::timestamp))))
+	    (t
+	     (multiple-value-bind (cx cy)
+		 (untransform-position (sheet-delta-transformation (sheet-mirrored-ancestor sheet) nil)
+				     (slot-value event 'climi::graft-x)
+				     (slot-value event 'climi::graft-y))
+	     (dispatch-event destination
+			     (make-instance (type-of event)
+					    :pointer (slot-value event 'climi::pointer)
+					    :x cx
+					    :y cy
+					    :graft-x (slot-value event 'climi::graft-x)
+					    :graft-y (slot-value event 'climi::graft-y)
+					    :sheet sheet
+					    :modifier-state (slot-value event 'climi::modifier-state)
+					    :timestamp (slot-value event 'climi::timestamp)))))))))
+
+(defmethod climi::distribute-event ((port standard-handled-event-port-mixin) (event pointer-event))
+  (let* ((sheet (port-pointer-sheet port))
+	 (grab-sheet (pointer-grab-sheet port))
+	 (destination (or grab-sheet sheet)))
+    (when sheet
+      (cond ((eq sheet (event-sheet event))
+	     (dispatch-event sheet event))
+            ((eq (sheet-mirrored-ancestor sheet) (sheet-mirrored-ancestor (event-sheet event)))
+	     (dispatch-event destination
+			     (make-instance (type-of event)
+					    :pointer (slot-value event 'climi::pointer)
+					    :x (slot-value event 'climi::x)
+					    :y (slot-value event 'climi::y)
+					    :graft-x (slot-value event 'climi::graft-x)
+					    :graft-y (slot-value event 'climi::graft-y)
+					    :sheet sheet
+					    :modifier-state (slot-value event 'climi::modifier-state)
+					    :timestamp (slot-value event 'climi::timestamp))))
+	    (t
+	     (multiple-value-bind (cx cy)
+		 (untransform-position (sheet-delta-transformation (sheet-mirrored-ancestor sheet) nil)
+				     (slot-value event 'climi::graft-x)
+				     (slot-value event 'climi::graft-y))
+	     (dispatch-event destination
+			     (make-instance (type-of event)
+					    :pointer (slot-value event 'climi::pointer)
 					    :x cx
 					    :y cy
 					    :graft-x (slot-value event 'climi::graft-x)
