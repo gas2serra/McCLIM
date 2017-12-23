@@ -22,6 +22,9 @@
 		#:port-register-mirror
 		#:coordinate=
 
+                #:pointer-scroll-event
+                #:pointer-button-event
+
 		#:%%sheet-native-transformation
 		#:%%set-sheet-native-transformation
 		#:%note-mirrored-sheet-child-grafted
