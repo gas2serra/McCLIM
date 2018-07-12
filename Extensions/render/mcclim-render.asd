@@ -15,7 +15,6 @@
                (:file "image-prim")
                (:file "pixeled-design")
                (:file "image-ops")
-               (:file "image-fast-ops")
                (:file "recording")
                (:file "compatibility")))
 
@@ -35,8 +34,7 @@
               :serial t
               :components
               ((:file "vectors")
-               (:file "vectors-image-ops")
-               (:file "vectors-image-fast-ops")))))
+               (:file "vectors-image-ops")))))
 
 (defsystem #:mcclim-render/two-dim-array
   :depends-on (#:mcclim-render/core)

@@ -82,6 +82,7 @@
    #:gray->rgba
    #:gray->rgb
    #:gray->alpha
+   #:alpha->gray
    ;; image
    #:rgb-image-mixin
    #:rgba-image-mixin

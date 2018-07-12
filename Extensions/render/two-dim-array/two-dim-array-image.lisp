@@ -27,26 +27,31 @@
                         :element-type '(unsigned-byte 32)
                         :initial-element #xFFFFFFFF)))))
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-rgba-image-primitives rgba-image rgba-image-pixels
-                            pixels-var x-var y-var red-var green-var blue-var alpha-var
-                            `(let ((p (aref ,pixels-var
-                                            ,y-var
-                                            ,x-var)))
-                               (values (ldb (byte 8 0) p)
-                                       (ldb (byte 8 8) p)
-                                       (ldb (byte 8 16) p)
-                                       (ldb (byte 8 24) p)))
-                            `(setf (aref ,pixels-var ,y-var ,x-var)
-                                   (dpb ,red-var (byte 8 0)
-                                        (dpb ,green-var (byte 8 8)
-                                             (dpb ,blue-var (byte 8 16)
-                                                  (dpb ,alpha-var (byte 8 24) 0)))))
-                            `(setf (aref ,pixels-var ,y-var ,x-var)
-                                   (dpb ,alpha-var (byte 8 24)
-                                        (aref ,pixels-var ,y-var ,x-var)))))
+(defmethod image-rgba-get-fn ((image rgba-image) &key (dx 0) (dy 0) (region nil))
+  (let ((pixels (image-pixels image)))
+    (declare (type  rgba-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (if (or (not region) (clim:region-contains-position-p region x y))
+          (let ((p (aref pixels (+ y dy) (+ x dx))))
+            (values (ldb (byte 8 0) p)
+                    (ldb (byte 8 8) p)
+                    (ldb (byte 8 16) p)
+                    (ldb (byte 8 24) p)))
+          (values 0 0 0 0)))))
 
-(def-rgba-image-functions rgba-image)
+(defmethod image-rgba-set-fn ((image rgba-image) &key (dx 0) (dy 0))
+  (let ((pixels (image-pixels image)))
+    (declare (type rgba-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y red green blue alpha)
+      (declare (type fixnum x y))
+      (setf (aref pixels (+ y dy) (+ x dx))
+            (dpb red (byte 8 0)
+                 (dpb green (byte 8 8)
+                      (dpb blue (byte 8 16)
+                           (dpb alpha (byte 8 24) 0))))))))
 
 ;;;
 ;;; RGB
@@ -66,23 +71,30 @@
                         :element-type '(unsigned-byte 32)
                         :initial-element #xFFFFFFFF)))))
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-rgb-image-primitives rgb-image rgb-image-pixels
-                           pixels-var x-var y-var red-var green-var blue-var alpha-var
-                           `(let ((p (aref ,pixels-var
-                                           ,y-var
-                                           ,x-var)))
-                             (values (ldb (byte 8 0) p)
-                                     (ldb (byte 8 8) p)
-                                     (ldb (byte 8 16) p)
-                                     255))
-                           `(setf (aref ,pixels-var ,y-var ,x-var)
-                                  (dpb ,red-var (byte 8 0)
-                                       (dpb ,green-var (byte 8 8)
-                                            (dpb ,blue-var (byte 8 16)
-                                                 (dpb 255 (byte 8 24) 0)))))))
+(defmethod image-rgb-get-fn ((image rgb-image) &key (dx 0) (dy 0) (region nil))
+  (let ((pixels (image-pixels image)))
+    (declare (type rgb-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (if (or (not region) (clim:region-contains-position-p region x y))
+          (let ((p (aref pixels (+ y dy) (+ x dx))))
+            (values (ldb (byte 8 0) p)
+                    (ldb (byte 8 8) p)
+                    (ldb (byte 8 16) p)))
+          (values 0 0 0)))))
 
-(def-rgb-image-functions rgb-image)
+(defmethod image-rgb-set-fn ((image rgb-image) &key (dx 0) (dy 0))
+  (let ((pixels (image-pixels image)))
+    (declare (type rgb-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y red green blue)
+      (declare (type fixnum x y))
+      (setf (aref pixels (+ y dy) (+ x dx))
+            (dpb red (byte 8 0)
+                 (dpb green (byte 8 8)
+                      (dpb blue (byte 8 16)
+                           (dpb 255 (byte 8 24) 0))))))))
 
 ;;;
 ;;; Gray
@@ -102,15 +114,24 @@
                         :element-type '(unsigned-byte 8)
                         :initial-element #x00)))))
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-gray-image-primitives gray-image gray-image-pixels
-                            pixels-var x-var y-var gray-var alpha-var
-                            `(aref ,pixels-var ,y-var ,x-var)
-                            `(setf (aref ,pixels-var ,y-var ,x-var) ,gray-var)
-                            `(setf (aref ,pixels-var ,y-var ,x-var) ,alpha-var)))
+(defmethod image-gray-get-fn ((image gray-image) &key (dx 0) (dy 0) (region nil))
+  (let ((pixels (image-pixels image)))
+    (declare (type gray-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (if (or (not region) (clim:region-contains-position-p region x y))
+          (aref pixels (+ y dy) (+ x dx))
+          0))))
 
-
-(def-gray-image-functions gray-image)
+(defmethod image-gray-set-fn ((image gray-image) &key (dx 0) (dy 0))
+  (let ((pixels (image-pixels image)))
+    (declare (type opticl-gray-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y gray)
+      (declare (type fixnum x y gray))
+      (setf (aref pixels (+ y dy) (+ x dx))
+            gray))))
 
 ;;;
 ;;; Configuration & Optimization
@@ -123,5 +144,3 @@
 
 (defmethod find-image-class ((family (eql :two-dim-array)) (type (eql :gray)))
   'gray-image)
-
-(def-fast-rgb-copy-image rgb-image rgb-image)
