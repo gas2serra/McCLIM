@@ -25,19 +25,24 @@
       (setf (slot-value image 'pixels)
             (opticl:make-8-bit-rgba-image height width :initial-element 255)))))
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-rgba-image-primitives opticl-rgba-image opticl-rgba-image-pixels
-                            pixels-var x-var y-var red-var green-var blue-var alpha-var
-                            `(opticl:pixel ,pixels-var ,y-var ,x-var)
-                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                   (values ,red-var ,green-var ,blue-var ,alpha-var))
-                            `(multiple-value-bind (rr gg bb aa)
-                                 (opticl:pixel ,pixels-var ,y-var ,x-var)
-                               (declare (ignore aa))
-                               (setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                     (values rr gg bb ,alpha-var)))))
+(defmethod image-rgba-get-fn ((image  opticl-rgba-image) &key (dx 0) (dy 0) (region nil))
+  (let ((pixels (image-pixels image)))
+    (declare (type  opticl-rgba-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (if (or (not region) (clim:region-contains-position-p region x y))
+          (opticl:pixel pixels (+ y dy) (+ x dx))
+          (values 0 0 0 0)))))
 
-(def-rgba-image-functions opticl-rgba-image)
+(defmethod image-rgba-set-fn ((image  opticl-rgba-image) &key (dx 0) (dy 0))
+  (let ((pixels (image-pixels image)))
+    (declare (type opticl-rgba-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y red green blue alpha)
+      (declare (type fixnum x y))
+      (setf (opticl:pixel pixels (+ y dy) (+ x dx))
+            (values red green blue alpha)))))
 
 ;;;
 ;;; RGB
@@ -55,16 +60,24 @@
       (setf (slot-value image 'pixels)
             (opticl:make-8-bit-rgb-image height width :initial-element 255)))))
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-rgb-image-primitives opticl-rgb-image opticl-rgb-image-pixels
-                           pixels-var x-var y-var red-var green-var blue-var alpha-var
-                           `(multiple-value-bind (r g b)
-                                (opticl:pixel ,pixels-var ,y-var ,x-var)
-                              (values r g b 255))
-                           `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                  (values ,red-var ,green-var ,blue-var))))
+(defmethod image-rgb-get-fn ((image  opticl-rgb-image) &key (dx 0) (dy 0) (region nil))
+  (let ((pixels (image-pixels image)))
+    (declare (type opticl-rgb-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (if (or (not region) (clim:region-contains-position-p region x y))
+          (opticl:pixel pixels (+ y dy) (+ x dx))
+          (values 0 0 0)))))
 
-(def-rgb-image-functions opticl-rgb-image)
+(defmethod image-rgb-set-fn ((image  opticl-rgb-image) &key (dx 0) (dy 0))
+  (let ((pixels (image-pixels image)))
+    (declare (type opticl-rgb-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y red green blue)
+      (declare (type fixnum x y))
+      (setf (opticl:pixel pixels (+ y dy) (+ x dx))
+            (values red green blue)))))
 
 ;;;
 ;;; Gray
@@ -82,16 +95,24 @@
       (setf (slot-value image 'pixels)
             (opticl:make-8-bit-gray-image height width :initial-element 0)))))
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (def-gray-image-primitives opticl-gray-image opticl-gray-image-pixels
-                            pixels-var x-var y-var gray-var alpha-var
-                            `(opticl:pixel ,pixels-var ,y-var ,x-var)
-                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                   ,gray-var)
-                            `(setf (opticl:pixel ,pixels-var ,y-var ,x-var)
-                                   ,alpha-var)))
+(defmethod image-gray-get-fn ((image  opticl-gray-image) &key (dx 0) (dy 0) (region nil))
+  (let ((pixels (image-pixels image)))
+    (declare (type  opticl-gray-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (if (or (not region) (clim:region-contains-position-p region x y))
+          (opticl:pixel pixels (+ y dy) (+ x dx))
+          0))))
 
-(def-gray-image-functions opticl-gray-image)
+(defmethod image-gray-set-fn ((image opticl-gray-image) &key (dx 0) (dy 0))
+  (let ((pixels (image-pixels image)))
+    (declare (type opticl-gray-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y gray)
+      (declare (type fixnum x y gray))
+      (setf (opticl:pixel pixels y x)
+            gray))))
 
 ;;;
 ;;; Configuration & Optimization
@@ -104,20 +125,6 @@
 
 (defmethod find-image-class ((family (eql :opticl)) (type (eql :gray)))
   'opticl-gray-image)
-
-(def-fast-rgb-copy-image opticl-rgb-image opticl-rgb-image)
-(def-fast-copy-alpha-channel opticl-gray-image opticl-rgba-image)
-
-(def-fast-fill-image-without-stencil opticl-rgb-image image-rgb-blend-code 4)
-(def-fast-fill-image-with-stencil opticl-rgb-image image-rgb-blend-code opticl-gray-image 4)
-
-#|
-(def-fast-gray-copy-image opticl-rgb-image opticl-gray-image)
-(def-fast-gray-copy-image opticl-rgb-image gray-image)
-(def-fast-gray-copy-image opticl-gray-image gray-image)
-(def-fast-rgb-copy-image opticl-gray-image rgb-image)
-(def-fast-gray->alpha-copy-image opticl-gray-image opticl-stancil-image)
-|#
 
 ;;;
 ;;; I/O
