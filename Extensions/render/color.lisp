@@ -183,3 +183,11 @@
 (defun gray->alpha (gray)
   gray)
 
+;;; alpha ->
+(declaim (inline alpha->gray)
+         (ftype (function (octet)
+			  octet)
+                alpha->gray))
+
+(defun alpha->gray (alpha)
+  alpha)
