@@ -1019,9 +1019,13 @@
     (let* ((base-angle (untransform-angle tr angle))
            (x (cos base-angle))
            (y (sin base-angle)))
-      (with-slots (mxx mxy myx myy tx ty) tr
-        (values (+ (* mxx x) (* mxy y) tx)
-                (+ (* myx x) (* myy y) ty))))))
+      (if (typep tr 'climi::standard-hairy-transformation)
+          (with-slots (mxx mxy myx myy tx ty) tr
+            (values (+ (* mxx x) (* mxy y) tx)
+                    (+ (* myx x) (* myy y) ty)))
+          (with-slots (dx dy) tr
+            (values (+ x dx)
+                    (+ y dy)))))))
 
 (defun ellipse-simplified-representation (el)
   ;; returns H (horizontal radius), V (vertical radius) and rotation angle in
