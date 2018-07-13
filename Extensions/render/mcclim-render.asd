@@ -74,4 +74,5 @@
   :components ((:module "clx"
                         :serial t
                         :components
-                        ((:file "clx-extension")))))
+                        ((:file "clx-image")
+                         (:file "clx-extension")))))

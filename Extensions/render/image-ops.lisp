@@ -1,5 +1,7 @@
 (in-package :mcclim-render-internals)
 
+;;(declaim (optimize speed))
+
 ;;;
 ;;; Image I/O
 ;;;
@@ -103,7 +105,6 @@
 (def-copy-image image-mixin rgba-image-mixin image-rgba-get-fn image-rgba-set-fn 4)
 (def-copy-image image-mixin rgb-image-mixin image-rgb-get-fn image-rgb-set-fn 3)
 (def-copy-image image-mixin gray-image-mixin image-gray-get-fn image-gray-set-fn 1)
-
 ;;;
 ;;; blend functions
 ;;;

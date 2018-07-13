@@ -1,11 +1,15 @@
 (in-package :mcclim-render-internals)
 
+;;(declaim (optimize speed))
+
 ;;;
 ;;; Image
 ;;;
 (defclass image ()
-  ((width :initform 0 :initarg :width :accessor image-width :type fixnum)
-   (height :initform 0 :initarg :height :accessor image-height :type fixnum)))
+  ())
+
+(defgeneric image-with (image))
+(defgeneric image-height (image))
 
 ;;;
 ;;; Image mixins
@@ -22,6 +26,65 @@
 (defclass gray-image-mixin (image-mixin)
   ())
 
+(deftype image-rgba-get-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
+(defgeneric image-rgba-get-fn (image &key dx dy region))
+(deftype image-rgba-set-fn () '(function (fixnum fixnum octet octet octet octet)))
+(defgeneric image-rgba-set-fn (image &key dx dy))
+(deftype image-rgb-get-fn () '(function (fixnum fixnum) (values octet octet octet)))
+(defgeneric image-rgb-get-fn (image &key dx dy region))
+(deftype image-rgb-set-fn () '(function (fixnum fixnum octet octet octet)))
+(defgeneric image-rgb-set-fn (image &key dx dy))
+(deftype image-gray-get-fn () '(function (fixnum fixnum) octet))
+(defgeneric image-gray-get-fn (image &key dx dy region))
+(deftype image-gray-set-fn () '(function (fixnum fixnum octet)))
+(defgeneric image-gray-set-fn (image &key dx dy))
+
+;; defaults
+(defmethod image-rgba-get-fn ((image rgb-image-mixin) &key (dx 0) (dy 0) (region nil))
+  (let ((fn (image-rgb-get-fn image :dx dx :dy dy :region region)))
+    (declare (type image-rgb-get-fn fn))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (multiple-value-bind (r g b)
+          (funcall fn x y)
+        (rgb->rgba r g b)))))
+(defmethod image-rgba-get-fn ((image gray-image-mixin) &key (dx 0) (dy 0) (region nil))
+  (let ((fn (image-gray-get-fn image :dx dx :dy dy :region region)))
+    (declare (type image-gray-get-fn fn))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (gray->rgba (funcall fn x y)))))
+(defmethod image-rgb-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
+  (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))
+    (declare (type image-rgba-get-fn fn))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (multiple-value-bind (r g b a)
+          (funcall fn x y)
+        (rgba->rgb r g b a)))))
+(defmethod image-rgb-get-fn ((image gray-image-mixin) &key (dx 0) (dy 0) (region nil))
+  (let ((fn (image-gray-get-fn image :dx dx :dy dy :region region)))
+    (declare (type image-gray-get-fn fn))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (gray->rgb (funcall fn x y)))))
+(defmethod image-gray-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
+  (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))
+    (declare (type image-rgba-get-fn fn))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (multiple-value-bind (r g b a)
+          (funcall fn x y)
+        (rgba->gray r g b a)))))
+(defmethod image-gray-get-fn ((image  rgb-image-mixin) &key (dx 0) (dy 0) (region nil))
+  (let ((fn (image-rgb-get-fn image :dx dx :dy dy :region region)))
+    (declare (type image-rgb-get-fn fn))
+    (lambda (x y)
+      (declare (type fixnum x y))
+      (multiple-value-bind (r g b)
+          (funcall fn x y)
+        (rgb->gray r g b)))))
+
 (defgeneric image-type (image)
   (:method ((image rgba-image-mixin))
     :rgba)
@@ -37,10 +100,6 @@
 ;;;
 ;;; Drawable Image
 ;;;
-(defclass drawable-image (image)
-  ())
-
-(defgeneric map-rgb-color (drawable-image fn &key x y width height))
 
 (defun draw-image* (medium image x y
                     &rest args
@@ -86,7 +145,9 @@
 ;;; Basic Image
 ;;;
 (defclass basic-image (image)
-  ((pixels :initarg :pixels
+  ((width :initform 0 :initarg :width :reader image-width :type fixnum)
+   (height :initform 0 :initarg :height :reader image-height :type fixnum)
+   (pixels :initarg :pixels
            :accessor image-pixels)))
 
 ;;;
