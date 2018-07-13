@@ -1,5 +1,7 @@
 (in-package :mcclim-render-internals)
 
+;;(declaim (optimize speed))
+
 ;;;
 ;;; Two dimensional array of pixels
 ;;;
@@ -14,7 +16,7 @@
 ;;;
 (deftype rgba-image-pixels () '(simple-array (unsigned-byte 32) (* *)))
 
-(defclass rgba-image (two-dim-array-image drawable-image rgba-image-mixin)
+(defclass rgba-image (two-dim-array-image rgba-image-mixin)
   ((pixels :type rgba-image-pixels)))
 
 (defmethod initialize-instance :after ((image rgba-image)
@@ -29,7 +31,7 @@
 
 (defmethod image-rgba-get-fn ((image rgba-image) &key (dx 0) (dy 0) (region nil))
   (let ((pixels (image-pixels image)))
-    (declare (type  rgba-image-pixels pixels)
+    (declare (type rgba-image-pixels pixels)
              (type fixnum dx dy))
     (lambda (x y)
       (declare (type fixnum x y))
@@ -46,7 +48,8 @@
     (declare (type rgba-image-pixels pixels)
              (type fixnum dx dy))
     (lambda (x y red green blue alpha)
-      (declare (type fixnum x y))
+      (declare (type fixnum x y)
+               (type octet red green blue alpha))
       (setf (aref pixels (+ y dy) (+ x dx))
             (dpb red (byte 8 0)
                  (dpb green (byte 8 8)
@@ -58,7 +61,7 @@
 ;;;
 (deftype rgb-image-pixels () '(simple-array (unsigned-byte 32) (* *)))
 
-(defclass rgb-image (two-dim-array-image drawable-image rgb-image-mixin)
+(defclass rgb-image (two-dim-array-image rgb-image-mixin)
   ((pixels :type rgb-image-pixels)))
 
 (defmethod initialize-instance :after ((image rgb-image)
@@ -89,7 +92,8 @@
     (declare (type rgb-image-pixels pixels)
              (type fixnum dx dy))
     (lambda (x y red green blue)
-      (declare (type fixnum x y))
+      (declare (type fixnum x y)
+               (type octet red green blue))
       (setf (aref pixels (+ y dy) (+ x dx))
             (dpb red (byte 8 0)
                  (dpb green (byte 8 8)
@@ -101,7 +105,7 @@
 ;;;
 (deftype gray-image-pixels () '(simple-array (unsigned-byte 8) (* *)))
 
-(defclass gray-image (two-dim-array-image drawable-image gray-image-mixin)
+(defclass gray-image (two-dim-array-image gray-image-mixin)
   ((pixels :type gray-image-pixels)))
 
 (defmethod initialize-instance :after ((image gray-image)
@@ -129,7 +133,8 @@
     (declare (type opticl-gray-image-pixels pixels)
              (type fixnum dx dy))
     (lambda (x y gray)
-      (declare (type fixnum x y gray))
+      (declare (type fixnum x y)
+               (type octet gray))
       (setf (aref pixels (+ y dy) (+ x dx))
             gray))))
 

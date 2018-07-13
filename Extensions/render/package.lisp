@@ -56,6 +56,8 @@
    #:opticl-rgb-image
    #:opticl-rgba-image
    #:opticl-gray-image
+   #:make-opticl-image
+   #:make-opticl-image-adapter
    ))
 
 (defpackage :mcclim-render-extensions
@@ -90,7 +92,6 @@
    #:find-image-class
    #:*default-family*
    #:image-family
-   #:drawable-image
    #:map-rgb-color
    #:basic-image
    #:image-design
