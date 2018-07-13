@@ -1,5 +1,7 @@
 (in-package :mcclim-render-internals)
 
+;;(declaim (optimize speed))
+
 (deftype pixeled-design-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
 
 (defparameter *pixeled-foreground-design* +black+)

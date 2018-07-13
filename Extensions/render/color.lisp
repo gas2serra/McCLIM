@@ -1,5 +1,7 @@
 (in-package :mcclim-render-internals)
 
+;;(declaim (optimize speed))
+
 ;;;
 ;;; utility functions
 ;;;

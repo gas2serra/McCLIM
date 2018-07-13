@@ -58,7 +58,7 @@
 		   (round to-x) (round to-y)
 		   (climi::medium-device-region medium)))))
 
-(defmethod %medium-draw-image ((medium render-medium-mixin) (image basic-image)
+(defmethod %medium-draw-image ((medium render-medium-mixin) (image image-mixin)
                                x y width height to-x to-y)
   (let ((msheet (sheet-mirrored-ancestor (medium-sheet medium))))
     (when (and msheet (sheet-mirror msheet))
@@ -385,7 +385,7 @@
                                     t))))))
 
 (defmethod medium-draw-image* ((medium render-medium-mixin)
-                               (image drawable-image) to-x to-y)
+                               (image image-mixin) to-x to-y)
   (let* ((width (image-width image))
 	 (height (image-height image))
 	 ;; (to-sheet (medium-sheet medium))
