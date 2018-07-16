@@ -1023,7 +1023,6 @@
         (values (+ (* mxx x) (* mxy y) tx)
                 (+ (* myx x) (* myy y) ty))))))
 
-
 (defun ellipse-simplified-representation (el)
   ;; returns H (horizontal radius), V (vertical radius) and rotation angle in
   ;; screen coordinates. `ellipse-normal-radii*' returns vectors with correct
