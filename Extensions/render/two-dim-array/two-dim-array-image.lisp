@@ -8,7 +8,7 @@
 (defclass two-dim-array-image (basic-image)
   ())
 
-(defmethod image-family ((image two-dim-array-image))
+(defmethod image-medium ((image two-dim-array-image))
   :two-dim-array)
 
 ;;;
@@ -138,14 +138,15 @@
       (setf (aref pixels (+ y dy) (+ x dx))
             gray))))
 
-;;;
-;;; Configuration & Optimization
-;;;
-(defmethod find-image-class ((family (eql :two-dim-array)) (type (eql :rgba)))
-  'rgba-image)
+(defmethod make-image ((medium (eql :two-dim-array)) (type (eql :rgba)) width height)
+  (make-instance 'rgba-image :width width :height height))
 
-(defmethod find-image-class ((family (eql :two-dim-array)) (type (eql :rgb)))
-  'rgb-image)
+(defmethod make-image ((medium (eql :two-dim-array)) (type (eql :rgb)) width height)
+  (make-instance 'rgb-image :width width :height height))
 
-(defmethod find-image-class ((family (eql :two-dim-array)) (type (eql :gray)))
-  'gray-image)
+(defmethod make-image ((medium (eql :two-dim-array)) (type (eql :gray)) width height)
+  (make-instance 'gray-image :width width :height height))
+
+(defmethod make-image ((medium (eql :two-dim-array)) (type (eql :auto)) width height)
+  (make-instance 'rgba-image :width width :height height))
+

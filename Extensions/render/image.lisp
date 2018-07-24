@@ -1,6 +1,6 @@
 (in-package :mcclim-render-internals)
 
-;;(declaim (optimize speed))
+#+nil (declaim (optimize speed))
 
 ;;;
 ;;; Image
@@ -16,6 +16,9 @@
 ;;;
 (defclass image-mixin ()
   ())
+
+(defclass image-adapter-mixin (image-mixin)
+  ((img :initarg :image)))
 
 (defclass rgba-image-mixin (image-mixin)
   ())
@@ -54,6 +57,24 @@
     (lambda (x y)
       (declare (type fixnum x y))
       (gray->rgba (funcall fn x y)))))
+(defmethod image-rgba-set-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
+  (let ((fn (image-rgb-set-fn image :dx dx :dy dy)))
+    (declare (type image-rgb-set-fn fn))
+    (lambda (x y red green blue alpha)
+      (declare (type fixnum x y)
+               (type octet red green blue alpha))
+      (multiple-value-bind (r g b)
+          (rgba->rgb red green blue alpha)
+        (funcall fn x y r g b)))))
+(defmethod image-rgba-set-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
+  (let ((fn (image-gray-set-fn image :dx dx :dy dy)))
+    (declare (type image-gray-set-fn fn))
+    (lambda (x y red green blue alpha)
+      (declare (type fixnum x y)
+               (type octet red green blue alpha))
+      (multiple-value-bind (g)
+          (rgba->gray red green blue alpha)
+        (funcall fn x y g)))))
 (defmethod image-rgb-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
   (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))
     (declare (type image-rgba-get-fn fn))
@@ -68,6 +89,24 @@
     (lambda (x y)
       (declare (type fixnum x y))
       (gray->rgb (funcall fn x y)))))
+(defmethod image-rgb-set-fn ((image rgba-image-mixin) &key (dx 0) (dy 0))
+  (let ((fn (image-rgba-set-fn image :dx dx :dy dy)))
+    (declare (type image-rgba-set-fn fn))
+    (lambda (x y red green blue)
+      (declare (type fixnum x y)
+               (type octet red green blue))
+      (multiple-value-bind (r g b a)
+          (rgb->rgba red green blue)
+        (funcall fn x y r g b a)))))
+(defmethod image-rgb-set-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
+  (let ((fn (image-gray-set-fn image :dx dx :dy dy)))
+    (declare (type image-gray-set-fn fn))
+    (lambda (x y red green blue)
+      (declare (type fixnum x y)
+               (type octet red green blue))
+      (multiple-value-bind (g)
+          (rgb->gray red green blue)
+        (funcall fn x y g)))))
 (defmethod image-gray-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
   (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))
     (declare (type image-rgba-get-fn fn))
@@ -84,6 +123,24 @@
       (multiple-value-bind (r g b)
           (funcall fn x y)
         (rgb->gray r g b)))))
+(defmethod image-gray-set-fn ((image rgba-image-mixin) &key (dx 0) (dy 0))
+  (let ((fn (image-rgba-set-fn image :dx dx :dy dy)))
+    (declare (type image-rgba-set-fn fn))
+    (lambda (x y gray)
+      (declare (type fixnum x y)
+               (type octet gray))
+      (multiple-value-bind (r g b a)
+          (gray->rgba gray)
+        (funcall fn x y r g b a)))))
+(defmethod image-gray-set-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
+  (let ((fn (image-rgb-set-fn image :dx dx :dy dy)))
+    (declare (type image-rgb-set-fn fn))
+    (lambda (x y gray)
+      (declare (type fixnum x y)
+               (type octet gray))
+      (multiple-value-bind (r g b)
+          (gray->rgb gray)
+        (funcall fn x y r g b)))))
 
 (defgeneric image-type (image)
   (:method ((image rgba-image-mixin))
@@ -93,9 +150,8 @@
   (:method ((image gray-image-mixin))
     :gray))
 
-(defvar *default-image-family* :two-dim-array)
-(defgeneric image-family (image))
-(defgeneric find-image-class (family type))
+(defvar *default-image-medium* :two-dim-array)
+(defgeneric image-medium (image))
 
 ;;;
 ;;; Drawable Image
@@ -153,7 +209,7 @@
 ;;;
 ;;; image I/O
 ;;;
-(defgeneric read-image (source &key format image-class image-family))
+(defgeneric read-image (source &key format type medium))
 (defgeneric write-image (image destination &key format quality))
 
 (defvar *image-file-readers* (make-hash-table :test 'equalp)
@@ -189,14 +245,13 @@ file to be read.")
 ;;;
 ;;; Image operations
 ;;;
-
-(defgeneric make-image (image-class-or-type width height &optional image-family))
-(defgeneric coerce-image (image image-class-or-type &optional image-family))
-(defgeneric clone-image (image image-class-or-type  &optional image-family))
+(defgeneric make-image (medium type width height))
+(defgeneric coerce-image (image type &optional medium))
+(defgeneric clone-image (image type &optional medium))
 (defgeneric copy-image (src-image sx sy width height dst-image x y))
 (defgeneric blend-image (src-image sx sy width height dst-image x y &key alpha))
-(defgeneric crop-image (image sx sy width height &optional image-class-or-type image-family))
-(defgeneric coerce-alpha-channel (image &optional image-class-or-type image-family))
-(defgeneric clone-alpha-channel (image &optional image-class-or-type image-family))
-(defgeneric copy-alpha-channel (src-image sx sy width height dst-image x y))
+(defgeneric crop-image (image sx sy width height &optional type medium))
 (defgeneric fill-image (image design stencil &key x y width height stencil-dx stencil-dy))
+(defgeneric coerce-alpha-channel (image &optional type medium))
+(defgeneric clone-alpha-channel (image &optional type medium))
+(defgeneric copy-alpha-channel (src-image sx sy width height dst-image x y))

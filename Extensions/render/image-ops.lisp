@@ -1,11 +1,11 @@
 (in-package :mcclim-render-internals)
 
-;;(declaim (optimize speed))
+#+nil (declaim (optimize speed))
 
 ;;;
 ;;; Image I/O
 ;;;
-(defmethod read-image (pathname &key format image-class image-family)
+(defmethod read-image (pathname &key format type medium)
   (unless format
     (setf format (intern (string-upcase
                           (pathname-type (pathname pathname)))
@@ -13,8 +13,8 @@
   (if (image-format-read-supported-p format)
       (let ((image (funcall (gethash format *image-file-readers*)
                             pathname)))
-        (if (or image-class image-family)
-            (coerce-image image image-class image-family)
+        (if (or type medium)
+            (coerce-image image type medium)
             image))
       (error "image format not supproted, yet")))
 
@@ -105,6 +105,7 @@
 (def-copy-image image-mixin rgba-image-mixin image-rgba-get-fn image-rgba-set-fn 4)
 (def-copy-image image-mixin rgb-image-mixin image-rgb-get-fn image-rgb-set-fn 3)
 (def-copy-image image-mixin gray-image-mixin image-gray-get-fn image-gray-set-fn 1)
+
 ;;;
 ;;; blend functions
 ;;;
@@ -146,78 +147,39 @@
   image-gray-alpha-get-fn image-gray-blend-fn 2)
 
 ;;;
-;;; images type and family
-;;;
-
-(defun %image-class (image image-class-or-type image-family)
-  (if (keywordp image-class-or-type)
-      (find-image-class
-       (or image-family (image-family image))
-       (if (eql image-class-or-type :default)
-           (image-type image)
-           image-class-or-type))
-      image-class-or-type))
-
-(defmethod make-image :around (image-class-or-type width height &optional (image-family *default-image-family*))
-  (if (keywordp image-class-or-type)
-      (let ((image-class (%image-class nil image-class-or-type image-family)))
-        (call-next-method image-class width height))
-      (call-next-method)))
-
-(defmethod coerce-image :around ((image image-mixin) image-class-or-type &optional image-family)
-  (if (keywordp image-class-or-type)
-      (let ((image-class (%image-class image image-class-or-type image-family)))
-        (call-next-method image image-class))
-      (call-next-method)))
-
-(defmethod clone-image :around ((image image-mixin) image-class-or-type &optional image-family)
-  (if (keywordp image-class-or-type)
-      (let ((image-class (%image-class image image-class-or-type image-family)))
-        (call-next-method image image-class))
-      (call-next-method)))
-
-(defmethod crop-image :around ((image image-mixin) sx sy width height &optional image-class-or-type image-family)
-  (if (keywordp image-class-or-type)
-      (let ((image-class (%image-class image image-class-or-type image-family)))
-        (call-next-method image sx sy width height image-class))
-      (call-next-method)))
-
-(defmethod coerce-alpha-channel :around ((image image-mixin) &optional (image-class-or-type :gray) image-family)
-  (if (keywordp image-class-or-type)
-      (let ((image-class (%image-class image image-class-or-type image-family)))
-        (call-next-method image image-class))
-      (call-next-method)))
-
-(defmethod clone-alpha-channel :around ((image image-mixin) &optional (image-class-or-type :gray) image-family)
-  (if (keywordp image-class-or-type)
-      (let ((image-class (%image-class image image-class-or-type image-family)))
-        (call-next-method image image-class))
-      (call-next-method)))
-
-;;;
 ;;; make
 ;;;
-(defmethod make-image (image-class-or-type width height &optional image-family)
-  (declare (ignore image-family))
-  (make-instance image-class-or-type
-                 :width width
-                 :height height))
+(defmethod make-image :around ((medium (eql :default)) type width height)
+  (call-next-method))
+
+(defmethod make-image ((medium (eql :default)) type width height)
+  (make-image *default-image-medium* type width height))
 
 ;;;
 ;;; coerce
 ;;;
-(defmethod coerce-image ((image image-mixin) image-class-or-type &optional image-family)
-  (declare (ignore image-family))
-  (if (typep image image-class-or-type)
+(defmethod coerce-image :around ((image image-mixin) type &optional medium)
+  (if (eql type :auto)
+      (call-next-method image (image-type image) (or medium (image-medium image)))
+      (call-next-method image type (or medium (image-medium image)))))
+
+(defmethod coerce-image ((image image-mixin) type &optional medium)
+  (if (and (eql (image-type image) type)
+           (eql (image-medium image) medium))
       image
-      (clone-image image  image-class-or-type)))
+      (clone-image image type medium)))
 
 ;;;
 ;;; clone
 ;;;
-(defmethod clone-image ((image image-mixin) image-class-or-type &optional image-family)
-  (declare (ignore image-family))
-  (let ((dest (make-image image-class-or-type
+(defmethod clone-image :around ((image image-mixin) type &optional medium)
+  (if (eql type :auto)
+      (call-next-method image (image-type image) (or medium (image-medium image)))
+      (call-next-method image type (or medium (image-medium image)))))
+
+(defmethod clone-image ((image image-mixin) type &optional medium)
+  (let ((dest (make-image medium
+                          type
                           (image-width image)
                           (image-height image))))
     (copy-image image 0 0 (image-width image) (image-height image)
@@ -227,9 +189,13 @@
 ;;;
 ;;; crop
 ;;;
-(defmethod crop-image ((image image-mixin) sx sy width height &optional image-class-or-type image-family)
-  (declare (ignore image-family))
-  (let ((dest (make-image (or image-class-or-type (class-of image))
+(defmethod crop-image :around ((image image-mixin) sx sy width height &optional type medium)
+  (call-next-method image sx sy width height (or type (image-type image))
+                    (or medium (image-medium image))))
+
+(defmethod crop-image ((image image-mixin) sx sy width height &optional type medium)
+  (let ((dest (make-image medium
+                          type
                           width
                           height)))
     (copy-image image sx sy width height dest 0 0)
@@ -254,15 +220,21 @@
 
 (def-copy-alpha-channel image-mixin image-mixin)
 
-(defmethod coerce-alpha-channel ((image image-mixin) &optional image-class image-family)
-  (declare (ignore image-family))
-  (if (typep image image-class)
-      image
-      (clone-alpha-channel image image-class)))
+(defmethod coerce-alpha-channel :around ((image image-mixin) &optional (type :gray) medium)
+  (call-next-method image type (or medium (image-medium image))))
 
-(defmethod clone-alpha-channel ((image image-mixin) &optional image-class image-family)
-  (declare (ignore image-family))
-  (let ((dest (make-image image-class
+(defmethod coerce-alpha-channel ((image image-mixin) &optional type medium)
+  (if (and (eql (image-type image) type)
+           (eql (image-medium image) medium))
+      image
+      (clone-alpha-channel image type medium)))
+
+(defmethod clone-alpha-channel :around ((image image-mixin) &optional (type :gray) medium)
+  (call-next-method image type (or medium (image-medium image))))
+
+(defmethod clone-alpha-channel ((image image-mixin) &optional type medium)
+  (let ((dest (make-image medium
+                          type
                           (image-width image)
                           (image-height image))))
     (copy-alpha-channel image 0 0 (image-width image) (image-height image)
@@ -277,7 +249,7 @@
   `(progn
      (let ((max-y (+ ,y ,height -1))
            (max-x (+ ,x ,width -1)))
-       (let ((,src-fn (pixeled-rgba-fn ,design))
+       (let ((,src-fn (pixeled-design-rgba-get-fn ,design))
              (,dst-fn (,set-fn ,image)))
          (declare (type pixeled-design-fn ,src-fn)
                   (type ,set-fn ,dst-fn)
@@ -297,7 +269,7 @@
          (declare (ignorable ,alpha))
          ,@code))))
 
-(defmethod fill-image :around ((image image-mixin) (design pixeled-design) stencil
+(defmethod fill-image :around ((image image-mixin) design stencil
                                &key (x 0) (y 0)
                                  (width (image-width image))
                                  (height (image-height image))
@@ -307,6 +279,14 @@
                     :width (round width) :height (round height)
                     :stencil-dx (and stencil-dx (round stencil-dx))
                     :stencil-dy (and stencil-dy (round stencil-dy))))
+
+(defmethod fill-image ((image image-mixin) design stencil 
+                       &key x y width height stencil-dx stencil-dy)
+  (fill-image image (make-pixeled-design design) stencil
+               :x x :y y
+               :width width :height height
+               :stencil-dx stencil-dx 
+               :stencil-dy stencil-dy))
 
 (defmacro def-fill-image-without-stencil (image-class fn channels)
   `(progn

@@ -1,11 +1,10 @@
 (in-package :mcclim-render-internals)
 
-;;(declaim (optimize speed))
+#+nil (declaim (optimize speed))
 
 ;;;
 ;;; image manipulation functions
 ;;;
-(defgeneric image-pixels-type (image-class))
 
 ;; rgba
 (deftype image-gray-alpha-get-fn () '(function (fixnum fixnum) (values octet octet)))
@@ -63,8 +62,6 @@
         (funcall sfn x y (octet-gray-blend-function gray alpha g))))))
 
 ;; rgb
-
-
 (defmethod image-alpha-get-fn ((image rgb-image-mixin) &key (dx 0) (dy 0) (region nil))
   (let ((fn (image-rgb-get-fn image :dx dx :dy dy :region region)))
     (declare (type image-rgb-get-fn fn))
@@ -73,9 +70,6 @@
       (multiple-value-bind (r g b)
           (funcall fn x y)
         (rgb->alpha r g b)))))
-
-
-
 (defmethod image-rgb-blend-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
   (let ((sfn (image-rgb-set-fn image :dx dx :dy dy))
         (gfn (image-rgb-get-fn image :dx dx :dy dy)))
@@ -87,7 +81,6 @@
         (multiple-value-bind (nr ng nb)
             (octet-rgb-blend-function red green blue alpha r g b)
         (funcall sfn x y nr ng nb))))))
-
 (defmethod image-rgb-xor-blend-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
   (let ((sfn (image-rgb-set-fn image :dx dx :dy dy))
         (gfn (image-rgb-get-fn image :dx dx :dy dy)))
@@ -105,8 +98,6 @@
           (funcall sfn x y nr ng nb))))))
 
 ;;; rgba
-
-
 (defmethod image-alpha-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
   (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))
     (declare (type image-rgba-get-fn fn))
@@ -115,8 +106,6 @@
       (multiple-value-bind (r g b a)
           (funcall fn x y)
         (rgba->alpha r g b a)))))
-
-
 
 (defmethod image-gray-alpha-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
   (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))

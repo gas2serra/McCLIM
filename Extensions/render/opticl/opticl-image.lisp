@@ -8,87 +8,13 @@
 (defclass opticl-image (basic-image)
   ())
 
-(defmethod image-family ((image  opticl-image))
+(defmethod image-medium ((image  opticl-image))
   :opticl)
 
 ;;;
 ;;; Adapters (read only)
 ;;; 
 
-(defclass opticl-image-adapter (opticl-image)
-  ())
-
-(defclass opticl-rgb-image-adapter (opticl-image-adapter rgb-image-mixin)
-  ())
-
-(defmethod image-rgb-get-fn ((image opticl-rgb-image-adapter) &key (dx 0) (dy 0) (region nil))
-  (with-slots (pixels) image
-    (declare (type fixnum dx dy))
-    (etypecase pixels
-      (opticl:8-bit-rgb-image      
-       (lambda (x y)
-         (declare (type fixnum x y))
-         (if (or (not region) (clim:region-contains-position-p region x y))
-             (opticl:pixel pixels (+ y dy) (+ x dx))
-             (values 0 0 0))))
-      (opticl:16-bit-rgb-image      
-       (lambda (x y)
-         (declare (type fixnum x y))
-         (if (or (not region) (clim:region-contains-position-p region x y))
-             (multiple-value-bind (r g b)
-                 (opticl:pixel pixels (+ y dy) (+ x dx))
-               (values (ash r -8) (ash g -8) (ash b -8)))
-             (values 0 0 0))))
-      (t
-       (error "unknown opticl image type (~A)" (type-of pixels))))))
-
-;;; rgba
-(defclass opticl-rgba-image-adapter (opticl-image-adapter rgba-image-mixin) 
-  ())
-
-(defmethod image-rgba-get-fn ((image opticl-rgba-image-adapter) &key (dx 0) (dy 0) (region nil))
-  (with-slots (pixels) image
-    (declare (type fixnum dx dy))
-    (etypecase pixels
-      (opticl:8-bit-rgba-image      
-       (lambda (x y)
-         (declare (type fixnum x y))
-         (if (or (not region) (clim:region-contains-position-p region x y))
-             (opticl:pixel pixels (+ y dy) (+ x dx))
-             (values 0 0 0 0))))
-      (opticl:16-bit-rgba-image      
-       (lambda (x y)
-         (declare (type fixnum x y))
-         (if (or (not region) (clim:region-contains-position-p region x y))
-             (multiple-value-bind (r g b a)
-                 (opticl:pixel pixels (+ y dy) (+ x dx))
-               (values (ash r -8) (ash g -8) (ash b -8) (ash a -8)))
-             (values 0 0 0 0))))
-      (t
-       (error "unknown opticl image type (~A)" (type-of pixels))))))
-
-;;; gray
-(defclass opticl-gray-image-adapter (opticl-image-adapter gray-image-mixin) 
-  ())
-
-(defmethod image-gray-get-fn ((image opticl-gray-image-adapter) &key (dx 0) (dy 0) (region nil))
-  (with-slots (pixels) image
-    (declare (type fixnum dx dy))
-    (etypecase pixels
-      (opticl:8-bit-gray-image
-       (lambda (x y)
-         (declare (type fixnum x y))
-         (if (or (not region) (clim:region-contains-position-p region x y))
-             (opticl:pixel pixels (+ y dy) (+ x dx))
-             0)))
-      (opticl:1-bit-gray-image
-       (lambda (x y)
-         (declare (type fixnum x y))
-         (if (or (not region) (clim:region-contains-position-p region x y))
-             (* 255 (opticl:pixel pixels (+ y dy) (+ x dx)))
-             0)))
-      (t
-       (error "unknown opticl image type (~A)" (type-of pixels))))))
 
 ;;;
 ;;; RGBA
@@ -199,35 +125,9 @@
             gray))))
 
 ;;;
-;;; Configuration & Optimization
-;;;
-(defmethod find-image-class ((family (eql :opticl)) (type (eql :rgba)))
-  'opticl-rgba-image)
-
-(defmethod find-image-class ((family (eql :opticl)) (type (eql :rgb)))
-  'opticl-rgb-image)
-
-(defmethod find-image-class ((family (eql :opticl)) (type (eql :gray)))
-  'opticl-gray-image)
-
-;;;
 ;;; making
 ;;;
-(defun make-opticl-image-adapter (opticl-pixels)
-  (opticl:with-image-bounds (height width channels) opticl-pixels
-    (cond ((or (not channels)
-               (= channels 1))
-           (make-instance 'opticl-gray-image-adapter
-                          :width width :height height :pixels opticl-pixels))
-          ((= channels 4)
-           (make-instance 'opticl-rgba-image-adapter
-                          :width width :height height :pixels opticl-pixels))
-          ((= channels 3)
-           (make-instance 'opticl-rgb-image-adapter
-                          :width width :height height :pixels opticl-pixels))
-          (t
-           (error "unknown opticl image type (~A) of ~A channels"
-                  (type-of opticl-pixels) channels)))))
+
 
 (defun make-opticl-image (opticl-pixels)
   (opticl:with-image-bounds (height width channels) opticl-pixels
@@ -275,7 +175,7 @@
 
 (defmacro define-opticl-image-file-writer (format fn)
   `(define-image-file-writer ,format (image destination)
-     (let ((img (coerce-image image 'opticl-rgb-image)))
+     (let ((img (coerce-image image :rgb :opticl)))
        (if ,fn
            (if (streamp destination)
                (funcall ,fn destination (image-pixels img))
@@ -290,3 +190,18 @@
 (define-opticl-image-file-writer :pbm #'opticl:write-pbm-stream)
 (define-opticl-image-file-writer :pgm #'opticl:write-pgm-stream)
 (define-opticl-image-file-writer :gif #'opticl:write-gif-stream)
+
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :rgba)) width height)
+  (make-instance 'opticl-rgba-image :width width :height height))
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :rgb)) width height)
+  (make-instance 'opticl-rgb-image :width width :height height))
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :gray)) width height)
+  (make-instance 'opticl-gray-image :width width :height height))
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :auto)) width height)
+  (make-instance 'opticl-rgba-image :width width :height height))
+
+
