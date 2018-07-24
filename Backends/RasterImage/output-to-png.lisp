@@ -57,7 +57,7 @@
 	      (declare (ignore stream))
 	      (coerce-image
                (image-mirror-image (sheet-mirror sheet))
-               'mcclim-image::rgb-image))
+               :traditional-rgb))
 	    (,enter-fn (sheet stream)
 	      (declare (ignore stream))
 	      (when ,image

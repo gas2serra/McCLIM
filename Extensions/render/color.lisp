@@ -1,11 +1,10 @@
 (in-package :mcclim-render-internals)
 
-;;(declaim (optimize speed))
+(declaim (optimize speed))
 
 ;;;
 ;;; utility functions
 ;;;
-
 (deftype octet ()
   '(unsigned-byte 8))
 
@@ -33,7 +32,6 @@
 ;;;
 ;;; blend functions
 ;;;
-
 (declaim (inline %lerp)
 	 (ftype (function (octet octet octet) octet) %lerp))
 (defun %lerp (p q a)
@@ -100,7 +98,6 @@
 ;;;
 ;;; conversion
 ;;;
-
 (defgeneric color->octets (color)
   (:method ((color standard-color))
     (multiple-value-bind (r g b)
@@ -108,6 +105,12 @@
       (values (color-value->octet r)
               (color-value->octet g)
               (color-value->octet b)))))
+
+(defun octets->color (red green blue)
+  (make-rgb-color
+   (octet->color-value red)
+   (octet->color-value green)
+   (octet->color-value blue)))
 
 ;;; rgba->
 (declaim (inline rgba->rgb)
@@ -124,14 +127,14 @@
 		rgba->gray))
 (defun rgba->gray (red green blue alpha)
   (declare (ignore alpha))
-  (values (round (+ red green blue) 3)))
+  (round (+ red green blue) 3))
 
 (declaim (inline rgba->gray-alpha)
          (ftype (function (octet octet octet octet)
 			  (values octet octet))
 		rgba->gray-alpha))
 (defun rgba->gray-alpha (red green blue alpha)
-  (values (round (+ red green blue) 3) alpha))
+  (values (rgba->gray red green blue alpha) alpha))
 
 (declaim (inline rgba->alpha)
          (ftype (function (octet octet octet octet)

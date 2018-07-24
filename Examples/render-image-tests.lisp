@@ -27,25 +27,34 @@
 
 (define-application-frame render-image-tests ()
   ((signal-condition-p :initform nil)
+   (family-option :initform :default)
    (current-selection :initform nil))
   (:panes
-   (output :application-pane
-           :min-width *render-image-width*
-           :min-height *render-image-height*
-           :display-time nil
-           :display-function #'render-image-display-output
-           :end-of-line-action :wrap
-           :end-of-page-action :wrap)
-   (description :application-pane)
+   (output :application
+           :width *render-image-width*
+           :height *render-image-height*
+           :scroll-bars :both
+           :display-function #'render-image-display-output)
+   (description :application
+                :scroll-bar :both)
    (selector :list-pane
              :mode :exclusive
              :name-key #'render-image-test-name
              :items (sort (loop for x being the hash-values of *render-image-tests*
                                 collect x) #'string< :key #'render-image-test-name)
              :value-changed-callback #'render-image-update-selection)
+   (family-option
+    (clim:with-radio-box (:orientation :vertical
+				       :value-changed-callback
+                                       'render-image-update-family-option)
+      (clim:radio-box-current-selection "default")
+      "two-dim-array"
+      "opticl"
+      "medium"))
    (condition-option
     (clim:with-radio-box (:orientation :vertical
-				       :value-changed-callback 'render-image-update-condition-option)
+				       :value-changed-callback
+                                       'render-image-update-condition-option)
       (clim:radio-box-current-selection "message")
       "break")))
   (:layouts
@@ -55,7 +64,9 @@
            (vertically ()
              (spacing (:thickness 3)
                (clim-extensions:lowering ()
-                 (scrolling (:scroll-bar :vertical :height *render-image-height*) selector)))
+                 (scrolling (:scroll-bar :vertical ) selector)))
+             (labelling (:label "Family")
+               family-option)
              (labelling (:label "Condition")
                condition-option))
            (vertically ()
@@ -68,12 +79,27 @@
              (spacing (:thickness 3)
                (clim-extensions:lowering ()
                  (scrolling (:scroll-bar :vertical :height 200) description)))))))))
-
+   
 (defun render-image-update-condition-option (this-gadget selected-gadget)
   (declare (ignore this-gadget))
   (with-slots (signal-condition-p) clim:*application-frame*
     (setf signal-condition-p
 	  (string= (clim:gadget-label selected-gadget) "break"))))
+
+(defun render-image-update-family-option (this-gadget selected-gadget)
+  (declare (ignore this-gadget))
+  (with-slots (family-option) clim:*application-frame*
+    (setf family-option
+	  (cond ((string= (clim:gadget-label selected-gadget) "default")
+                 :default)
+                ((string= (clim:gadget-label selected-gadget) "two-dim-array")
+                 :two-dim-array)
+                ((string= (clim:gadget-label selected-gadget) "opticl")
+                 :opticl)
+                ((string= (clim:gadget-label selected-gadget) "medium")
+                 (clim:sheet-medium (get-frame-pane *application-frame* 'output))))))
+  (window-clear (get-frame-pane *application-frame* 'description))
+  (redisplay-frame-pane *application-frame* (get-frame-pane *application-frame* 'output) :force-p t))
 
 (defun render-image-update-selection (pane item)
   (declare (ignore pane))
@@ -103,9 +129,9 @@
                   (clim:draw-rectangle* output 0 0 *render-image-width* *render-image-height* :filled t
                                         :ink clim:+grey90+)
                   (funcall (render-image-test-drawer item) output))
-              (condition (condition)
+              (serious-condition (condition)
                 (clim:with-drawing-options (description :ink +red+)
-                  (format description "Error:~a~%" condition)))))))))
+                  (format description "~a~%" condition)))))))))
 
 
 (defun run-render-image-tests ()
@@ -113,72 +139,82 @@
    (make-application-frame
     'render-image-tests)))
 
-(defun render-image-test-make-rgb-image-2d (w h color)
-  (let* ((image (clim-render:make-image :rgb w h :two-dim-array))
-         (pixels (clim-render:image-pixels image)))
-    (dotimes (x w)
-      (dotimes (y h)
-        (setf (aref pixels y x) color)))
-    image))
+(defun render-image-test-make-rgba-image (w h)
+  (with-slots (family-option) clim:*application-frame*
+    (let* ((image (clim-render:make-image family-option :rgba w h)))
+      image)))
 
-(defun render-image-test-make-rgb-image-op (w h color)
-  (let* ((image (clim-render:make-image :rgb w h :opticl))
-         (pixels (clim-render:image-pixels image)))
-    (let ((b (first color))
-          (g (second color))
-          (r (third color)))
+(defun render-image-test-make-rgb-image (w h)
+  (with-slots (family-option) clim:*application-frame*
+    (let* ((image (clim-render:make-image family-option :rgb w h)))
+      image)))
+
+(defun render-image-test-make-gray-image (w h)
+  (with-slots (family-option) clim:*application-frame*
+    (let* ((image (clim-render:make-image family-option :gray w h)))
+      image)))
+
+(defun render-image-test-read-rgba-image (path)
+  (with-slots (family-option) clim:*application-frame*
+    (let* ((image (clim-render:read-image path
+                                          :type :rgba
+                                          :medium family-option)))
+      image)))
+
+(defun render-image-test-read-rgb-image (path)
+  (with-slots (family-option) clim:*application-frame*
+    (let* ((image (clim-render:read-image path
+                                          :type :rgb
+                                          :medium family-option)))
+      image)))
+
+(defun render-image-test-read-gray-image (path)
+  (with-slots (family-option) clim:*application-frame*
+    (let* ((image (clim-render:read-image path
+                                          :type :gray
+                                          :medium family-option)))
+      image)))
+
+(defun render-image-test-fill-rgba-image (image color)
+  (let ((fn (clim-render:image-rgba-set-fn image))
+        (w (clim-render:image-width image))
+        (h (clim-render:image-height image)))
+    (multiple-value-bind (r g b)
+        (clim-render:color->octets color)
       (dotimes (x w)
         (dotimes (y h)
-          (setf (opticl:pixel pixels y x) (values r g b)))))
-    image))
+          (funcall fn x y r g b 100))))
+      image))
 
-(defun render-image-test-make-rgb-image (image-class w h color)
-  (let* ((image (make-instance image-class :width w :height h))
-         (fn (clim-render:image-rgb-set-fn image)))
+(defun render-image-test-fill-rgb-image (image color)
+  (let ((fn (clim-render:image-rgb-set-fn image))
+        (w (clim-render:image-width image))
+        (h (clim-render:image-height image)))
     (multiple-value-bind (r g b)
         (clim-render:color->octets color)
       (dotimes (x w)
         (dotimes (y h)
           (funcall fn x y r g b))))
-    image))
+      image))
 
-(defun render-image-test-make-rgba-image (image-class w h color)
-  (let* ((image (make-instance image-class :width w :height h))
-         (fn (clim-render:image-rgba-set-fn image)))
+(defun render-image-test-fill-gray-image (image color)
+  (let ((fn (clim-render:image-gray-set-fn image))
+        (w (clim-render:image-width image))
+        (h (clim-render:image-height image)))
     (multiple-value-bind (r g b)
         (clim-render:color->octets color)
       (dotimes (x w)
         (dotimes (y h)
-          (funcall fn x y r g b 255))))
+          (funcall fn x y (round (+ r g b) 3)))))
     image))
 
-(defun render-image-test-01-2d (stream)
+(define-render-image-test "01) simple fill rgba" (stream)
+    "Simple drawing of two dimensional array of pixels: white, black;
+red, green, blue;
+purple, olive."
   (flet ((draw-rect (color w h)
-           (let ((image (render-image-test-make-rgb-image-2d 90 70 color)))
-             (clim-render:draw-image* stream image w h))))
-    (draw-rect #xFFFFFF 10 10)
-    (draw-rect #x000000 110 10)
-    (draw-rect #x0000F0 10 100)
-    (draw-rect #x00F000 110 100)
-    (draw-rect #xF00000 210 100)
-    (draw-rect #x800080 10 200)
-    (draw-rect #x808000 110 200)))
-
-(defun render-image-test-01-op (stream)
-  (flet ((draw-rect (color w h)
-           (let ((image (render-image-test-make-rgb-image-op 90 70 color)))
-             (clim-render:draw-image* stream image w h))))
-    (draw-rect (list #xFF #xFF #xFF) 10 10)
-    (draw-rect (list #x00 #x00 #x00) 110 10)
-    (draw-rect (list #x00 #x00 #xF0) 10 100)
-    (draw-rect (list #x00 #xF0 #x00) 110 100)
-    (draw-rect (list #xF0 #x00 #x00) 210 100)
-    (draw-rect (list #x80 #x00 #x80) 10 200)
-    (draw-rect (list #x80 #x80 #x00) 110 200)))
-
-(defun render-image-test-02 (stream image-class)
-  (flet ((draw-rect (color w h)
-           (let ((image (render-image-test-make-rgb-image image-class 90 70 color)))
+           (let* ((image (render-image-test-make-rgba-image 90 70)))
+             (render-image-test-fill-rgba-image image color)
              (clim-render:draw-image* stream image w h))))
     (draw-rect +white+ 10 10)
     (draw-rect +black+ 110 10)
@@ -188,471 +224,378 @@
     (draw-rect +purple+ 10 200)
     (draw-rect +olive-drab+ 110 200)))
 
-(defun render-image-test-03 (stream image-class h)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  image-class)))
-      (clim-render:draw-image* stream image 10 h))))
+(define-render-image-test "01) simple fill rgb" (stream)
+    "Simple drawing of two dimensional array of pixels: white, black;
+red, green, blue;
+purple, olive."
+  (flet ((draw-rect (color w h)
+           (let* ((image (render-image-test-make-rgb-image 90 70)))
+             (render-image-test-fill-rgb-image image color)
+             (clim-render:draw-image* stream image w h))))
+    (draw-rect +white+ 10 10)
+    (draw-rect +black+ 110 10)
+    (draw-rect +red+ 10 100)
+    (draw-rect +green+ 110 100)
+    (draw-rect +blue+ 210 100)
+    (draw-rect +purple+ 10 200)
+    (draw-rect +olive-drab+ 110 200)))
 
-(defun render-image-test-04 (stream image-class h)
+(define-render-image-test "01) simple fill gray" (stream)
+    "Simple drawing of two dimensional array of pixels: white, black;
+red, green, blue;
+purple, olive."
+  (flet ((draw-rect (color w h)
+           (let* ((image (render-image-test-make-gray-image 90 70)))
+             (render-image-test-fill-gray-image image color)
+             (clim-render:draw-image* stream image w h))))
+    (draw-rect +white+ 10 10)
+    (draw-rect +black+ 110 10)
+    (draw-rect +red+ 10 100)
+    (draw-rect +green+ 110 100)
+    (draw-rect +blue+ 210 100)
+    (draw-rect +purple+ 10 200)
+    (draw-rect +olive-drab+ 110 200)))
+
+(define-render-image-test "02) read rgb image" (stream)
+    ""
+  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+    (let ((image (render-image-test-read-rgb-image path)))
+      (clim-render:draw-image* stream image 10 0))))
+
+(define-render-image-test "02) read gray images" (stream)
+    ""
+  (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn1-file* *testing-image-directory*)))
+    (let ((image (render-image-test-read-gray-image path)))
+      (clim-render:draw-image* stream image 10 0)))
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :gray)
-                  :default image-class)))
-      (clim-render:draw-image* stream
-                              (clim-render:coerce-image image :rgb)
-                              10 10)
-      (clim-render:draw-image* stream
-                              (clim-render:coerce-image image :gray)
-                              10 360))))
+    (let ((image (render-image-test-read-gray-image path)))
+      (clim-render:draw-image* stream image 10 300))))
 
-(defun render-image-test-05 (stream image-class transformation)
+(define-render-image-test "03) translate " (stream)
+    ""
+  (flet ((test (stream transformation)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (clim-render:draw-image* stream image 0 0
+                                        :transformation transformation)))))
+    (test stream
+          (clim:make-translation-transformation 10 10))
+    (test stream 
+          (clim:make-translation-transformation 10 360))))
+
+(define-render-image-test "04) clipping " (stream)
+    ""
+  (flet ((test (transformation clipping-region)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (with-bounding-rectangle* (x1 y1 x2 y2)
+                   clipping-region
+                 (draw-rectangle* stream x1 y1 x2 y2 :ink +green+ :filled nil))
+               (with-bounding-rectangle* (x1 y1 x2 y2)
+                   (transform-region transformation clipping-region)
+                 (draw-rectangle* stream x1 y1 x2 y2 :ink +blue+ :filled nil))
+               (clim-render:draw-image* stream image 0 0
+                                        :transformation transformation
+                                        :clipping-region clipping-region)))))
+    (test
+     (clim:make-translation-transformation 10 10)
+     (make-rectangle* 50 50 250 250))
+    (test
+     (clim:make-translation-transformation 10 360)
+     (make-rectangle* 50 50 250 250))))
+
+(define-render-image-test "05) with translation" (stream)
+    ""
   (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  image-class)))
-      (clim-render:draw-image* stream image 0 0
-                              :transformation transformation))))
+    (with-translation (stream 10 10)
+      (let ((image (render-image-test-read-rgb-image path)))
+        (clim-render:draw-image* stream image 10 0)))
+    (with-translation (stream (- 10) 360)
+      (let ((image (render-image-test-read-rgb-image path)))
+        (clim-render:draw-image* stream image 10 0)))))
 
-(defun render-image-test-06 (stream image-class transformation clipping-region)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  image-class)))
-      (with-bounding-rectangle* (x1 y1 x2 y2)
-          clipping-region
-        (draw-rectangle* stream x1 y1 x2 y2 :ink +green+ :filled nil))
-      (with-bounding-rectangle* (x1 y1 x2 y2)
-          (transform-region transformation clipping-region)
-        (draw-rectangle* stream x1 y1 x2 y2 :ink +blue+ :filled nil))
-      (clim-render:draw-image* stream image 0 0
-                              :transformation transformation
-                              :clipping-region clipping-region))))
-
-(defun render-image-test-08 (stream image-class h)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  image-class)))
-      (draw-design stream (clim-render:make-image-design image) :x 10 :y h))))
-
-(defun render-image-test-09 (stream image-class transformation)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  image-class)))
-      (draw-design stream (clim-render:make-image-design image) :x 0 :y 0
-                   :transformation transformation))))
-
-(defun render-image-test-10 (stream image-class transformation clipping-region)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  image-class)))
-      (with-bounding-rectangle* (x1 y1 x2 y2)
-          clipping-region
-        (draw-rectangle* stream x1 y1 x2 y2 :ink +green+ :filled nil))
-      (with-bounding-rectangle* (x1 y1 x2 y2)
-          (transform-region transformation clipping-region)
-        (draw-rectangle* stream x1 y1 x2 y2 :ink +blue+ :filled nil))
-      (draw-design stream (clim-render:make-image-design image) :x 0 :y 0
-                   :transformation transformation
-                   :clipping-region clipping-region))))
-
-(defun render-image-test-12 (stream image-class w h color)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
-    (let* ((alpha-image
-            (clim-render:coerce-alpha-channel
-              (clim-render:read-image path)))
-           (image (render-image-test-make-rgba-image image-class
-                                                     (clim-render:image-width alpha-image)
-                                                     (clim-render:image-height alpha-image)
-                                                     color)))
-      (clim-render:copy-alpha-channel alpha-image
-                             0 0
-                             (clim-render:image-width alpha-image)
-                             (clim-render:image-height alpha-image)
-                             image
-                             0 0)
-      (clim-render:draw-image* stream image w h))))
-
-(defun render-image-test-13 (stream fg-image-class bg-image-class w h alpha)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
-    (let* ((alpha-image
-            (clim-render:coerce-alpha-channel
-              (clim-render:read-image path)))
-           (image
-            (clim-render:coerce-image (render-image-test-make-rgba-image 'clim-render:rgba-image
-                                                     (clim-render:image-width alpha-image)
-                                                     (clim-render:image-height alpha-image)
-                                                     +red+)
-                          fg-image-class))
-           (bg-image
-            (clim-render:coerce-image (render-image-test-make-rgba-image 'clim-render:rgba-image
-                                                             (clim-render:image-width alpha-image)
-                                                             (clim-render:image-height alpha-image)
-                                                             +yellow+)
-                          bg-image-class)))
-
-      (clim-render:copy-alpha-channel alpha-image
-                             0 0
-                             (clim-render:image-width alpha-image)
-                             (clim-render:image-height alpha-image)
-                             image
-                             0 0)
-      (clim-render:blend-image image
-                              0 0
-                              (clim-render:image-width alpha-image)
-                              (clim-render:image-height alpha-image)
-                              bg-image
-                              0 0 :alpha alpha)
-      (clim-render:draw-image* stream bg-image w h))))
-
-(defun render-image-test-15 (stream image-class cx cy cw ch w h)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  :default image-class)))
-      (clim-render:draw-image* stream
-                              (clim-render:crop-image image cx cy cw ch)
-                              w h))))
-
-(defun render-image-test-16 (stream image-class design cx cy cw ch w h)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  :default image-class))
-          (pixeled-design (clim-render:make-pixeled-design design)))
-      (clim-render:fill-image image pixeled-design nil :x cx :y cy :width cw :height ch)
-      (clim-render:draw-image* stream
-                              image
-                              w h))))
-
-(defun render-image-test-17 (stream image-class design cx cy cw ch w h)
-  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*))
-        (path2 (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
-    (let ((image (clim-render:coerce-image
-                  (clim-render:read-image path :image-class :rgb)
-                  :default image-class))
-          (pixeled-design (clim-render:make-pixeled-design design))
-          (stencil (clim-render:coerce-alpha-channel
-                    (clim-render:read-image path2))))
-      (clim-render:fill-image image pixeled-design stencil :x cx :y cy :width cw :height ch
-                             :stencil-dx (- cx) :stencil-dy (- cy))
-      (clim-render:draw-image* stream
-                              image
-                              w h))))
-
-(define-render-image-test "2d - 01) simple rgb" (stream)
-    "Simple drawing of two dimensional array of pixels: white, black;
-red, green, blue;
-purple, olive."
-  (render-image-test-01-2d stream))
-
-(define-render-image-test "op - 01) simple rgb" (stream)
-    "Simple drawing of two dimensional array of pixels: white, black;
-red, green, blue;
-purple, olive."
-  (render-image-test-01-op stream))
-
-(define-render-image-test "2d - 02) simple rgb" (stream)
-    "Simple drawing of two dimensional array of pixels: white, black;
-red, green, blue;
-purple, olive."
-  (render-image-test-02 stream 'clim-render:rgb-image))
-
-(define-render-image-test "op - 02) simple rgb" (stream)
-    "Simple drawing of two dimensional array of pixels: white, black;
-red, green, blue;
-purple, olive."
-  (render-image-test-02 stream 'clim-render:opticl-rgb-image))
-
-(define-render-image-test "op - 03) read rgb" (stream)
+(define-render-image-test "06) design draw" (stream)
     ""
-  (render-image-test-03 stream 'clim-render:opticl-rgb-image 10)
-  (render-image-test-03 stream 'clim-render:opticl-gray-image 360))
+  (flet ((test (stream h)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (draw-design stream (clim-render:make-image-design image) :x 10 :y h)))))
+    (test stream 10)
+    (test stream 360)))
+
+(define-render-image-test "07) design translate " (stream)
+    ""
+  (flet ((test (transformation)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (draw-design stream (clim-render:make-image-design image) :x 0 :y 0
+                            :transformation transformation)))))
+    (test (clim:make-translation-transformation 10 10))
+    (test (clim:make-translation-transformation 10 360))))
+
+(define-render-image-test "08) design clipping " (stream)
+    ""
+  (flet ((test (transformation clipping-region)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (with-bounding-rectangle* (x1 y1 x2 y2)
+                   clipping-region
+                 (draw-rectangle* stream x1 y1 x2 y2 :ink +green+ :filled nil))
+               (with-bounding-rectangle* (x1 y1 x2 y2)
+                   (transform-region transformation clipping-region)
+                 (draw-rectangle* stream x1 y1 x2 y2 :ink +blue+ :filled nil))
+               (draw-design stream (clim-render:make-image-design image) :x 0 :y 0
+                            :transformation transformation
+                            :clipping-region clipping-region)))))
+    (test
+     (clim:make-translation-transformation 10 10)
+     (make-rectangle* 50 50 250 250))
+    (test 
+     (clim:make-translation-transformation 10 360)
+     (make-rectangle* 50 50 250 250))))
+
+(define-render-image-test "09) design with-translation" (stream)
+    ""
+  (flet ((test (h)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (draw-design stream (clim-render:make-image-design image) :x 10 :y h)))))
+    (with-translation (stream 10 10)
+      (test 0))
+    (with-translation (stream (- 10) 360)
+      (test 0))))
 
 
-(define-render-image-test "2d - 03) read rgb" (stream)
+(define-render-image-test "10) alpha" (stream)
     ""
-  (render-image-test-03 stream 'clim-render:rgb-image 10)
-  (render-image-test-03 stream 'clim-render:gray-image 360))
+  (flet ((test (w h color)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
+             (let* ((alpha-image
+                     ;;(clim-render:coerce-alpha-channel
+                      (render-image-test-read-gray-image path));;)
+                    (image (render-image-test-make-rgba-image
+                            (clim-render:image-width alpha-image)
+                            (clim-render:image-height alpha-image))))
+               (render-image-test-fill-rgba-image image color)
+               (clim-render:copy-alpha-channel alpha-image
+                                               0 0
+                                               (clim-render:image-width alpha-image)
+                                               (clim-render:image-height alpha-image)
+                                               image
+                                               0 0)
+               (clim-render:draw-image* stream image w h)))))
+    (test 10 10 +red+)
+    (test 10 360 +green+)))
 
-(define-render-image-test "op - 04) read gray" (stream)
+(define-render-image-test "11) blend rgba" (stream)
     ""
-  (render-image-test-04 stream :opticl 10))
+  (flet ((test (w h alpha)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
+             (let* ((alpha-image
+                     ;;(clim-render:coerce-alpha-channel
+                      (render-image-test-read-gray-image path));;)
+                    (image (render-image-test-make-rgba-image
+                            (clim-render:image-width alpha-image)
+                            (clim-render:image-height alpha-image)))
+                    (bg-image (render-image-test-make-rgba-image
+                               (clim-render:image-width alpha-image)
+                               (clim-render:image-height alpha-image))))
+               (render-image-test-fill-rgba-image image +red+)
+               (render-image-test-fill-rgba-image bg-image +yellow+)
+               (clim-render:copy-alpha-channel alpha-image
+                                               0 0
+                                               (clim-render:image-width alpha-image)
+                                               (clim-render:image-height alpha-image)
+                                               image
+                                               0 0)
+               (clim-render:blend-image image
+                                        0 0
+                                        (clim-render:image-width alpha-image)
+                                        (clim-render:image-height alpha-image)
+                                        bg-image
+                                        0 0 :alpha alpha)
+               (clim-render:draw-image* stream bg-image w h)))))
+    (test
+     10 10 255)
+    (test 
+     10 360 128)))
 
-(define-render-image-test "2d - 04) read gray" (stream)
+(define-render-image-test "11) blend rgb" (stream)
     ""
-  (render-image-test-04 stream :two-dim-array 10))
+  (flet ((test (w h alpha)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
+             (let* ((alpha-image
+                     ;;(clim-render:coerce-alpha-channel
+                      (render-image-test-read-gray-image path));;)
+                    (image (render-image-test-make-rgba-image
+                            (clim-render:image-width alpha-image)
+                            (clim-render:image-height alpha-image)))
+                    (bg-image (render-image-test-make-rgb-image
+                               (clim-render:image-width alpha-image)
+                               (clim-render:image-height alpha-image))))
+               (render-image-test-fill-rgba-image image +red+)
+               (render-image-test-fill-rgb-image bg-image +yellow+)
+               (clim-render:copy-alpha-channel alpha-image
+                                               0 0
+                                               (clim-render:image-width alpha-image)
+                                               (clim-render:image-height alpha-image)
+                                               image
+                                               0 0)
+               (clim-render:blend-image image
+                                        0 0
+                                        (clim-render:image-width alpha-image)
+                                        (clim-render:image-height alpha-image)
+                                        bg-image
+                                        0 0 :alpha alpha)
+               (clim-render:draw-image* stream bg-image w h)))))
+    (test
+     10 10 255)
+    (test 
+     10 360 128)))
 
-(define-render-image-test "op - 05) translate " (stream)
+(define-render-image-test "11) blend gray" (stream)
     ""
-  (render-image-test-05 stream 'clim-render:opticl-rgb-image
-                        (clim:make-translation-transformation 10 10))
-  (render-image-test-05 stream 'clim-render:opticl-gray-image
-                        (clim:make-translation-transformation 10 360)))
+  (flet ((test (w h alpha)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
+             (let* ((alpha-image
+                     ;;(clim-render:coerce-alpha-channel
+                      (render-image-test-read-gray-image path));;)
+                    (image (render-image-test-make-rgba-image
+                            (clim-render:image-width alpha-image)
+                            (clim-render:image-height alpha-image)))
+                    (bg-image (render-image-test-make-gray-image
+                               (clim-render:image-width alpha-image)
+                               (clim-render:image-height alpha-image))))
+               (render-image-test-fill-rgba-image image +red+)
+               (render-image-test-fill-gray-image bg-image +yellow+)
+               (clim-render:copy-alpha-channel alpha-image
+                                               0 0
+                                               (clim-render:image-width alpha-image)
+                                               (clim-render:image-height alpha-image)
+                                               image
+                                               0 0)
+               (clim-render:blend-image image
+                                        0 0
+                                        (clim-render:image-width alpha-image)
+                                        (clim-render:image-height alpha-image)
+                                        bg-image
+                                        0 0 :alpha alpha)
+               (clim-render:draw-image* stream bg-image w h)))))
+    (test
+     10 10 255)
+    (test 
+     10 360 128)))
 
-(define-render-image-test "2d - 05) translate" (stream)
+(define-render-image-test "12) crop" (stream)
     ""
-  (render-image-test-05 stream 'clim-render:rgb-image
-                        (clim:make-translation-transformation 10 10))
-  (render-image-test-05 stream 'clim-render:gray-image
-                        (clim:make-translation-transformation 10 360)))
+  (flet ((test (cx cy cw ch w h)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgba-image path)))
+               (clim-render:draw-image* stream
+                                        (clim-render:crop-image image cx cy cw ch)
+                                        w h)))))
+    (test 100 100 100 150
+          10 10)
+    (test 150 150 150 100
+          200 10)))
 
-(define-render-image-test "op - 06) clipping " (stream)
+(define-render-image-test "13) fill color" (stream)
     ""
-  (render-image-test-06 stream 'clim-render:opticl-rgb-image
-                        (clim:make-translation-transformation 10 10)
-                        (make-rectangle* 50 50 250 250))
-  (render-image-test-06 stream 'clim-render:opticl-gray-image
-                        (clim:make-translation-transformation 10 360)
-                        (make-rectangle* 50 50 250 250)))
+  (flet ((test (design cx cy cw ch w h)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (clim-render:fill-image image design nil :x cx :y cy :width cw :height ch)
+               (clim-render:draw-image* stream
+                                        image
+                                        w h)))))
+    (test +red+
+          100 100 100 150
+          10 10)
+    (test (compose-in +green+ (make-opacity 0.5))
+          150 150 150 100
+          10 300)))
 
-(define-render-image-test "2d - 06) clipping" (stream)
+(define-render-image-test "14) fill stencil" (stream)
     ""
-  (render-image-test-06 stream 'clim-render:rgb-image
-                        (clim:make-translation-transformation 10 10)
-                        (make-rectangle* 50 50 250 250))
-  (render-image-test-06 stream 'clim-render:gray-image
-                        (clim:make-translation-transformation 10 360)
-                        (make-rectangle* 50 50 250 250)))
+  (flet ((test (design cx cy cw ch w h)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*))
+                 (path2 (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path))
+                   (stencil ;;(clim-render:coerce-alpha-channel
+                             (render-image-test-read-gray-image path2)));;)
+               (clim-render:fill-image image design stencil :x cx :y cy :width cw :height ch
+                                       :stencil-dx (- cx) :stencil-dy (- cy))
+               (clim-render:draw-image* stream
+                                        image
+                                        w h)))))
+    (test +red+
+          100 100 100 150
+          10 10)
+    (test (compose-in +green+ (make-opacity 0.5))
+          150 150 150 100
+          10 300)))
 
-(define-render-image-test "op - 07) with translation" (stream)
+(define-render-image-test "15) output record :draw nil" (stream)
     ""
-  (with-translation (stream 10 10)
-    (render-image-test-03 stream 'clim-render:opticl-rgb-image 0))
-  (with-translation (stream (- 10) 360)
-    (render-image-test-03 stream 'clim-render:opticl-gray-image 0)))
+  (flet ((test (h)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (draw-design stream (clim-render:make-image-design image) :x 10 :y h)))))
+    (clim:with-output-to-output-record (stream)
+      (with-output-recording-options (stream :record t :draw nil)
+        ;;(test 10)
+        (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
 
-(define-render-image-test "2d - 07) with-translation" (stream)
+(define-render-image-test "16) output record moving" (stream)
     ""
-  (with-translation (stream 10 10)
-    (render-image-test-03 stream 'clim-render:rgb-image 0))
-  (with-translation (stream (- 10) 360)
-    (render-image-test-03 stream 'clim-render:gray-image 0)))
+  (flet ((test (h)
+           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+             (let ((image (render-image-test-read-rgb-image path)))
+               (draw-design stream (clim-render:make-image-design image) :x 10 :y h)))))
+    (let ((record
+           (clim:with-output-to-output-record (stream)
+             (with-output-recording-options (stream :record t :draw t)
+               (test 10)
+               (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
+      (setf (clim:output-record-position record) (values 10 310))
+      (replay record stream))))
 
-(define-render-image-test "op - 08) design draw" (stream)
+(define-render-image-test "17) coerce" (stream)
     ""
-  (render-image-test-08 stream 'clim-render:opticl-rgb-image 10)
-  (render-image-test-08 stream 'clim-render:opticl-gray-image 360))
+  (let* ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*))
+         (image (clim-render:crop-image
+                 (render-image-test-read-rgba-image path)
+                 100 100 100 150)))
+    (flet ((test (medium type w h)
+             (clim-render:draw-image* stream
+                                      (mcclim-render:coerce-image image type medium)
+                                      w h)))
+      (test (sheet-medium stream) :rgba 10 10)
+      (test (sheet-medium stream) :rgb 160 10)
+      (test (sheet-medium stream) :gray 310 10)
+      (test :opticl :rgba 10 210)
+      (test :opticl :rgb 160 210)
+      (test :opticl :gray 310 210)
+      (test :two-dim-array :rgba 10 410)
+      (test :two-dim-array :rgb 160 410)
+      (test :two-dim-array :gray 310 410))))
 
-(define-render-image-test "2d - 08) design draw" (stream)
+(define-render-image-test "18) clone" (stream)
     ""
-  (render-image-test-08 stream 'clim-render:rgb-image 10)
-  (render-image-test-08 stream 'clim-render:gray-image 360))
-
-(define-render-image-test "op - 09) design translate " (stream)
-    ""
-  (render-image-test-09 stream 'clim-render:opticl-rgb-image
-                        (clim:make-translation-transformation 10 10))
-  (render-image-test-09 stream 'clim-render:opticl-gray-image
-                        (clim:make-translation-transformation 10 360)))
-
-(define-render-image-test "2d - 09) design translate" (stream)
-    ""
-  (render-image-test-09 stream 'clim-render:rgb-image
-                        (clim:make-translation-transformation 10 10))
-  (render-image-test-09 stream 'clim-render:gray-image
-                        (clim:make-translation-transformation 10 360)))
-
-(define-render-image-test "op - 10) design clipping " (stream)
-    ""
-  (render-image-test-10 stream 'clim-render:opticl-rgb-image
-                        (clim:make-translation-transformation 10 10)
-                        (make-rectangle* 50 50 250 250))
-  (render-image-test-10 stream 'clim-render:opticl-gray-image
-                        (clim:make-translation-transformation 10 360)
-                        (make-rectangle* 50 50 250 250)))
-
-(define-render-image-test "2d - 10) design clipping" (stream)
-    ""
-  (render-image-test-10 stream 'clim-render:rgb-image
-                        (clim:make-translation-transformation 10 10)
-                        (make-rectangle* 50 50 250 250))
-  (render-image-test-10 stream 'clim-render:gray-image
-                        (clim:make-translation-transformation 10 360)
-                        (make-rectangle* 50 50 250 250)))
-
-(define-render-image-test "op - 11) design with-translation" (stream)
-    ""
-  (with-translation (stream 10 10)
-    (render-image-test-08 stream 'clim-render:opticl-rgb-image 0))
-  (with-translation (stream (- 10) 360)
-    (render-image-test-08 stream 'clim-render:opticl-gray-image 0)))
-
-(define-render-image-test "2d - 11) design with-translation" (stream)
-    ""
-  (with-translation (stream 10 10)
-    (render-image-test-08 stream 'clim-render:rgb-image 0))
-  (with-translation (stream (- 10) 360)
-    (render-image-test-08 stream 'clim-render:gray-image 0)))
-
-(define-render-image-test "op - 12) alpha" (stream)
-    ""
-  (render-image-test-12 stream 'clim-render:opticl-rgba-image 10 10 +red+)
-  (render-image-test-12 stream 'clim-render:opticl-rgba-image 10 360 +green+))
-
-(define-render-image-test "2d - 12) alpha" (stream)
-    ""
-  (render-image-test-12 stream 'clim-render:rgba-image 10 10 +red+)
-  (render-image-test-12 stream 'clim-render:rgba-image 10 360 +green+))
-
-(define-render-image-test "op - 13) blend" (stream)
-    ""
-  (render-image-test-13 stream
-                        'clim-render:opticl-rgba-image
-                        'clim-render:opticl-rgba-image
-                        10 10 255)
-  (render-image-test-13 stream
-                        'clim-render:opticl-rgba-image
-                        'clim-render:opticl-rgba-image
-                        10 360 128))
-
-(define-render-image-test "2d - 13) blend" (stream)
-    ""
-  (render-image-test-13 stream
-                        'clim-render:rgba-image
-                        'clim-render:rgba-image
-                        10 10 255)
-  (render-image-test-13 stream
-                        'clim-render:rgba-image
-                        'clim-render:rgba-image
-                        10 360 128))
-
-(define-render-image-test "op - 14) blend gray" (stream)
-    ""
-  (render-image-test-13 stream
-                        'clim-render:opticl-rgba-image
-                        'clim-render:opticl-gray-image
-                        10 10 255)
-  (render-image-test-13 stream
-                        'clim-render:opticl-rgba-image
-                        'clim-render:opticl-gray-image
-                        10 360 128))
-
-(define-render-image-test "2d - 14) blend gray" (stream)
-    ""
-  (render-image-test-13 stream
-                        'clim-render:rgba-image
-                        'clim-render:gray-image
-                        10 10 255)
-  (render-image-test-13 stream
-                        'clim-render:rgba-image
-                        'clim-render:gray-image
-                        10 360 128))
-
-(define-render-image-test "op - 14) blend rgb" (stream)
-    ""
-  (render-image-test-13 stream
-                        'clim-render:opticl-rgba-image
-                        'clim-render:opticl-rgb-image
-                        10 10 255)
-  (render-image-test-13 stream
-                        'clim-render:opticl-rgba-image
-                        'clim-render:opticl-rgb-image
-                        10 360 128))
-
-(define-render-image-test "2d - 14) blend rgb" (stream)
-    ""
-  (render-image-test-13 stream
-                        'clim-render:rgba-image
-                        'clim-render:rgb-image
-                        10 10 255)
-  (render-image-test-13 stream
-                        'clim-render:rgba-image
-                        'clim-render:rgb-image
-                        10 360 128))
-
-(define-render-image-test "op - 15) crop" (stream)
-    ""
-  (render-image-test-15 stream
-                        :opticl
-                        100 100 100 150
-                        10 10)
-  (render-image-test-15 stream
-                        :opticl
-                        150 150 150 100
-                        200 10))
-
-(define-render-image-test "2d - 15) crop" (stream)
-    ""
-  (render-image-test-15 stream
-                        :two-dim-array
-                        100 100 100 150
-                        10 10)
-  (render-image-test-15 stream
-                        :two-dim-array
-                        150 150 150 100
-                        200 10))
-(define-render-image-test "op - 16) fill color" (stream)
-    ""
-  (render-image-test-16 stream
-                        :opticl
-                        +red+
-                        100 100 100 150
-                        10 10)
-  (render-image-test-16 stream
-                        :opticl
-                        (compose-in +green+ (make-opacity 0.5))
-                        150 150 150 100
-                        10 300))
-
-(define-render-image-test "2d - 16) fill color" (stream)
-    ""
-  (render-image-test-16 stream
-                        :two-dim-array
-                        +red+
-                        100 100 100 150
-                        10 10)
-  (render-image-test-16 stream
-                        :two-dim-array
-                        (compose-in +green+ (make-opacity 0.5))
-                        150 150 150 100
-                        10 300))
-(define-render-image-test "op - 17) fill stencil" (stream)
-    ""
-  (render-image-test-17 stream
-                        :opticl
-                        +red+
-                        100 100 100 150
-                        10 10)
-  (render-image-test-17 stream
-                        :opticl
-                        (compose-in +green+ (make-opacity 0.5))
-                        150 150 150 100
-                        10 300))
-
-(define-render-image-test "2d - 17) fill stencil" (stream)
-    ""
-  (render-image-test-17 stream
-                        :two-dim-array
-                        +red+
-                        100 100 100 150
-                        10 10)
-  (render-image-test-17 stream
-                        :two-dim-array
-                        (compose-in +green+ (make-opacity 0.5))
-                        150 150 150 100
-                        10 300))
-;;;
-;;; indipendent
-;;;
-
-(define-render-image-test "zz - 01) output record :draw nil" (stream)
-    ""
-  (clim:with-output-to-output-record (stream)
-    (with-output-recording-options (stream :record t :draw nil)
-      (render-image-test-08 stream 'clim-render:rgb-image 10)
-      (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t))))
-
-(define-render-image-test "zz - 01) output record moving" (stream)
-    ""
-  (let ((record
-         (clim:with-output-to-output-record (stream)
-           (with-output-recording-options (stream :record t :draw t)
-             (render-image-test-08 stream 'clim-render:rgb-image 10)
-             (draw-rectangle* stream 10 10 50 50 :ink +green+ :filled t)))))
-    (setf (clim:output-record-position record) (values 10 310))
-    (replay record stream)))
+  (let* ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*))
+         (image (clim-render:crop-image
+                 (render-image-test-read-rgba-image path)
+                 100 100 100 150)))
+    (flet ((test (medium type w h)
+             (clim-render:draw-image* stream
+                                      (mcclim-render:clone-image image type medium)
+                                      w h)))
+      (test (sheet-medium stream) :rgba 10 10)
+      (test (sheet-medium stream) :rgb 160 10)
+      (test (sheet-medium stream) :gray 310 10)
+      (test :opticl :rgba 10 210)
+      (test :opticl :rgb 160 210)
+      (test :opticl :gray 310 210)
+      (test :two-dim-array :rgba 10 410)
+      (test :two-dim-array :rgb 160 410)
+      (test :two-dim-array :gray 310 410))))

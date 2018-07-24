@@ -341,6 +341,7 @@ McCLIM distribution.  It can be started using demodemo.
 @section Render Images
 Author: 2016-2018 Alessandro Serra (gas2serra at gmail.com).
 
+@subsection Images
 This extension has the goal to provide a fast and flexible way to display images in the screen. It is not a general purpose image processing library.
 For a general purpose library see:
 @enumerate
@@ -392,6 +393,15 @@ This function returns @code{(/ v 255)}.
 This function returns @code{(coerce (round (* 255 color)) 'octet))}.
 @end deffn
 
+@deffn {Function} {color->octets} color
+
+This function convert a clim color into its rgb components.
+@end deffn
+
+@deffn {Function} {octets->color} red green blue
+
+This function convert a rgb components into a clim color.
+@end deffn
 
 There are three different types of images: rgba, rgb and gray.
 
@@ -438,20 +448,20 @@ This function returns a function that must take 5 arguments: x, y  and red, gree
 This function returns a function that must take 3 arguments: x, y  and gray component.
 @end deffn
 
-In order to convert an image type to another of the same implementation we use the concept of family. 
-There are two implemented families: two dim array and opticl
+Each backend (medium) can use a specific implementation of the image classes. 
+There are a few specific mediums that cam be used: two-dim-array or opticl.
+
+@deffn {Generic Function} {image-medium} image
+
+This function returns the medium of an image or :two-dim-array or :opticl
+@end deffn
 
 @deffn {Generic Function} {image-type} image
+This function returns the type of an image (:rgba, :rgb or :gray).
+
 @end deffn
 
-@deffn {Generic Function} {image-family} image
-@end deffn
-
-@deffn {Generic Function} {find-image-family} family type
-@end deffn
-
-@subsection Drawable functions
-
+@subsection Drawing functions
 
 To draw an image you can use @code{draw-image}.
 
@@ -460,7 +470,6 @@ To draw an image you can use @code{draw-image}.
 This function draws an image on a sheet.
 @end deffn    
 
-@subsection McCLIM integration
 An image can be used as design or pattern. To draw an image you can also use @code{draw-pattern*} or @code{draw-design}.
 
 @deftp {Class} image-design
@@ -483,6 +492,7 @@ This class is a subclass of the pattern and image-design classes.
 This function returns an image-pattern of the image @code{image}.
 @end deffn
 
+
 @subsection Basic Image
 
 @deftp {Protocol Class} basic-image
@@ -495,9 +505,73 @@ This class is a subclass of all image classes.
 This function returns the internal representation of the array of pixels. 
 @end deffn
 
+@subsection Basic Image Operations
+
+@deffn {Generic Function} {make-image} medium type width height
+
+@end deffn
+
+@deffn {Generic Function} {coerce-image} image type &optional medium
+
+@end deffn
+
+@deffn {Generic Function} {clone-image} image type &optional medium
+
+@end deffn
+
+
+@subsection I/O Images
+
+@deffn {Generic Function} {read-image} source &key format type medium
+
+Read an image from the source. The source can be a pathname designator
+(a string or a path), or a stream.  The caller can supply a value for
+format, type or medium for sources that don't indicate these values. 
+A value of nil for type means recognize the type automatically.  
+@end deffn
+
+@deffn {Generic Function} {write-image} image destination &key (format :pnm) (quality 1)
+
+Write the image to the destination.  The destination can be a pathname
+designator (a string or a path), or a stream.  Valid values of format are
+:pnm (pbm, pgm, or ppm according to the type of image), :png, :jpeg,
+(more...).  The quality argument is a value from 0 to 1 and indicates
+desired image quality (for formats with lossy compression).
+@end deffn
+
+@subsection Operations
+
+@deffn {Generic Function} {copy-image} src-image sx sy width height dst-image x y
+
+@end deffn
+
+@deffn {Generic Function} {fill-image} image design stencil &key x y width height stencil-dx stencil-dy
+
+@end deffn
+
+@deffn {Generic Function} {crop-image} image sx sy width height &optional type medium
+
+@end deffn
+
+@deffn {Generic Function} {blend-image} src-image sx sy width height dst-image x y &key alpha
+
+@end deffn
+
+@deffn {Generic Function} {copy-alpha-channel} src-image sx sy width height dst-image x y
+
+@end deffn
+
+@deffn {Generic Function} {clone-alpha-channel} image &optional type medium
+
+@end deffn
+
+@deffn {Generic Function} {coerce-alpha-channel} image &optional type medium
+
+@end deffn
+
 
 @subsection pixeled design
-Every design can be converted into pixeled-design.
+Every MCCLIM's design can be converted into pixeled-design.
 
 @deftp {Protocol Class} {pixeled-design}
 
@@ -507,32 +581,53 @@ Every design can be converted into pixeled-design.
 
 @end deffn
 
-@deffn {Generic Function} {make-pixeled-rgba-octets-fn} pixeled-design
+@deffn {Generic Function} {pixeled-design-rgba-get-fn} pixeled-design
 
 @end deffn
-
-@deffn {Generic Function} {make-pixeled-rgba-octets-unsafe-fn} pixeled-design
-
-@end deffn
-
-@deftp {Protocol Class} {pixeled-uniform-design}
-
-@end deftp
-
-@deftp {Protocol Class} {pixeled-functional-design}
-
-@end deftp
-
-@deftp {Protocol Class} {pixeled-image-design}
-
-@end deftp
 
 @deffn {Feneric Function} {make-pixeled-design} design &key foreground background
 
 @end deffn
 
 
-@subsection Opticl Images
+@subsection Adapters
+This extension is not a general purpose image processing library.
+For a general purpose library see:
+@enumerate
+@item opticl (https://github.com/slyrus/opticl),
+@item ch-image (https://github.com/slyrus/ch-image) [obsolete], and
+@item imago (https://github.com/tokenrove/imago).
+@end enumerate
+
+In order to display images from an external library it is requires an adapter class.
+
+@subsubsection Opticl
+Provided by: @code{mcclim-render/opticl}.
+
+@deffn {Function} {make-opticl-image-adapter} opticl-image
+
+@end deffn
+
+
+@subsubsection Imago
+Provided by: @code{mcclim-render/imago}.
+
+@deffn {Function} {make-imago-adapter} imago-image
+
+@end deffn
+
+
+@subsubsection Ch-image
+Provided by: @code{mcclim-render/ch-image}.
+
+@deffn {Function} {make-ch-image-adapter} ch-image-image
+
+@end deffn
+
+@subsection Full implementations
+
+@subsubsection Opticl Images
+Provided by: @code{mcclim-render/opticl}
 
 @deftp {Protocol Class} opticl-image
 
@@ -540,100 +635,66 @@ This class is a subclass of the basic-image and drawable-image classes.
 The generic function image-pixels returns an opticl image.
 @end deftp
 
-@deftp {Class} opticl-rgb-image
+@deftp {Class} opticl-rgba-image
 
 This class is a subclass of the basic-image and opticl-image classes. 
-A pixel is a triple of octets that represents the red, green and blue component, respectively.
-A pixel can have an optional octet that represents its alpha value.
+A pixel is a triple of octets that represents the red, green, blue and alpha component, respectively.
 
 In the current implementation, @code{image-pixels} returns 
 an array of type @code{opticl:8-bit-rgba-image}.
 @end deftp
 
-@deftp {Class} ocpicl-gray-level-image
+@deftp {Class} opticl-rgb-image
+
+This class is a subclass of the basic-image and opticl-image classes. 
+A pixel is a triple of octets that represents the red, green and blue component, respectively.
+
+In the current implementation, @code{image-pixels} returns 
+an array of type @code{opticl:8-bit-rgb-image}.
+@end deftp
+
+@deftp {Class} ocpicl-gray-image
 
 This class is a subclass of the basic-image and opticl-image classes. 
 In the current implementation, @code{image-pixels} returns 
 an array of type @code{8-bit-gray-image}.
 @end deftp
 
-@deftp {Class} opticl-stencil-image
-
-This class is a subclass of the basic-image and opticl-image classes. 
-This image contains only al alpha channel.
-In the current implementation, @code{image-pixels} returns 
-an array of type @code{8-bit-gray-image}.
-@end deftp
-
-@subsection 2d Images
-@deftp {Protocol Class} 2d-image
+@subsubsection Two Dim Array Images
+Provided by: @code{mcclim-render/two-dim-array}
+@deftp {Protocol Class} two-dim-array-image
 
 This class is a subclass of the basic-image and drawable-image classes. 
 The generic function image-pixels returns a two dimensioanl array of pixels.
 @end deftp
 
-@deftp {Class} 2d-rgb-image
+@deftp {Class} rgba-image
 
-This class is a subclass of the basic-image and 2d-image classes. 
-A pixel is a triple of octets that represents the red, green and blue component, respectively.
-A pixel can have an optional octet that represents its alpha value. 
+This class is a subclass of the @code{two-dim-array-image} and @code{rgba-image-mixin} classes. 
+A pixel is a triple of octets that represents the red, green, blue and alpha component, respectively.
 
 @code{image-pixels} returns a (simple-array (unsigned-byte 32) (* *)).
 The pixel values directly represent ABRG octet values. 
 @end deftp
 
-@deftp {Class} 2d-gray-level-image
+@deftp {Class} rgb-image
 
-This class is a subclass of the basic-image and 2d-image classes. 
-@code{image-pixels} returns a (simple-array (unsigned-byte 8) (* *)).
+This class is a subclass of the @code{two-dim-array-image} and @code{rgb-image-mixin} classes. 
+A pixel is a triple of octets that represents the red, green and blue component, respectively.
+
+@code{image-pixels} returns a (simple-array (unsigned-byte 32) (* *)).
+The pixel values directly represent BRG octet values. 
 @end deftp
 
-@deftp {Class} 2d-stencil-image
 
-This class is a subclass of the basic-image and 2d-image classes. 
-This image contains only al alpha channel.
+@deftp {Class} gray-image
 
+This class is a subclass of the @code{two-dim-array-image} and @code{gray-image-mixin} classes. 
 @code{image-pixels} returns a (simple-array (unsigned-byte 8) (* *)).
 @end deftp
-
-@subsection Operations
-
-@deffn {Generic Function} {fill-image} image pixeled-design stencil &key x y width height stencil-dx stencil-dy
-
-@end deffn
-
-@deffn {Generic Function} {copy-image} src-image sx sy width height dst-image x y
-
-@end deffn
-
-@deffn {Generic Function} {coerce-image} image image-class
-
-@end deffn
-
-
-@subsection I/O Images
-
-@deffn {Generic Function} {read-image} source &key type width height
-
-Read an image from the source.  The source can be a pathname designator
-(a string or a path), or a stream.  The caller can supply a value for
-type, width, and height for sources that don't indicate these values.  A
-value of nil for type means recognize the type automatically.  Other
-values for type are :truecolor (an array of 3-byte color values)
-:256-gray-level (an array of 1-byte gray-level values) :binary (an array
-of bits).
-@end deffn
-
-@deffn {Generic Function} {write-image} image destination &key (type :pnm) (quality 1)
-
-Write the image to the destination.  The destination can be a pathname
-designator (a string or a path), or a stream.  Valid values of type are
-:pnm (pbm, pgm, or ppm according to the type of image), :png, :jpeg,
-(more...).  The quality argument is a value from 0 to 1 and indicates
-desired image quality (for formats with lossy compression).
-@end deffn
 
 @subsection CL-Vectors Integration
+Provided by: @code{mcclim-render/cl-vectors}
 
 @deffn {Generic Function} {aa-cells-sweep/rectangle} image pixeled-design state clip-region
 

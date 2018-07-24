@@ -50,7 +50,8 @@
   :components ((:module "opticl"
                         :serial t
                         :components
-                        ((:file "opticl-image")))))
+                        ((:file "image-adapter")
+                         (:file "opticl-image")))))
 
 (defsystem #:mcclim-render/backend
     :depends-on (#:mcclim-render/cl-vectors)
@@ -76,3 +77,22 @@
                         :components
                         ((:file "clx-image")
                          (:file "clx-extension")))))
+
+(defsystem #:mcclim-render/imago
+    :depends-on (#:mcclim-render/core
+                 #:imago)
+  :serial t
+  :components ((:module "imago"
+                        :serial t
+                        :components
+                        ((:file "image-adapter")))))
+
+(defsystem #:mcclim-render/ch-image
+    :depends-on (#:mcclim-render/core
+                 #:ch-image)
+  :serial t
+  :components ((:module "ch-image"
+                        :serial t
+                        :components
+                        ((:file "image-adapter")))))
+

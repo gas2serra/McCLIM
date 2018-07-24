@@ -1,6 +1,6 @@
 (in-package :mcclim-render-internals)
 
-;;(declaim (optimize speed))
+#+nil (declaim (optimize speed))
 
 (deftype pixeled-design-fn () '(function (fixnum fixnum) (values octet octet octet octet)))
 
@@ -14,14 +14,14 @@
   ((region :initarg :region :initform +everywhere+ :type region
            :accessor pixeled-design-region)))
 
-(defgeneric pixeled-rgba-fn (design))
-(defgeneric pixeled-rgba-unsafe-fn (design))
+(defgeneric pixeled-design-rgba-get-fn (design))
+(defgeneric pixeled-design-rgba-get-unsafe-fn (design))
 
-(defmethod pixeled-rgba-fn :around (design)
+(defmethod pixeled-design-rgba-get-fn :around (design)
   (with-slots (region)
       design
     (if (region-equal region +everywhere+)
-        (pixeled-rgba-unsafe-fn design)
+        (pixeled-design-rgba-get-unsafe-fn design)
         (call-next-method))))
 
 ;;;
@@ -40,7 +40,7 @@
 (defun make-pixeled-uniform-design (&key (red 0) (green 0) (blue 0) (alpha 255))
   (make-instance 'pixeled-uniform-design :red red :green green :blue blue :alpha alpha))
 
-(defmethod pixeled-rgba-fn ((design pixeled-uniform-design))
+(defmethod pixeled-design-rgba-get-fn ((design pixeled-uniform-design))
   (with-slots (red green blue alpha region)
       design
     (lambda (x y)
@@ -48,7 +48,7 @@
           (values red green blue alpha)
           (values 0 0 0 0)))))
 
-(defmethod pixeled-rgba-unsafe-fn ((design pixeled-uniform-design))
+(defmethod pixeled-design-rgba-get-unsafe-fn ((design pixeled-uniform-design))
   (with-slots (red green blue alpha region)
       design
     (lambda (x y)
@@ -64,7 +64,7 @@
 (defun make-pixeled-functional-design (&key color-fn (region +everywhere+))
   (make-instance 'pixeled-functional-design :color-fn color-fn :region region))
 
-(defmethod pixeled-rgba-fn ((design pixeled-functional-design))
+(defmethod pixeled-design-rgba-get-fn ((design pixeled-functional-design))
   (with-slots (color-fn region)
       design
     (declare (type pixeled-design-fn color-fn))
@@ -74,7 +74,7 @@
           (funcall color-fn x y)
           (values 0 0 0 0)))))
 
-(defmethod pixeled-rgba-unsafe-fn ((design pixeled-functional-design))
+(defmethod pixeled-design-rgba-get-unsafe-fn ((design pixeled-functional-design))
   (with-slots (color-fn region)
       design
     (declare (type pixeled-design-fn color-fn))
@@ -105,12 +105,12 @@
                  :image image
                  :region (make-rectangle* 0 0 (1- (image-width image)) (1- (image-height image)))))
 
-(defmethod  pixeled-rgba-fn ((design pixeled-image-design))
+(defmethod  pixeled-design-rgba-get-fn ((design pixeled-image-design))
   (with-slots (image dx dy region)
       design
     (image-rgba-get-fn image :dx dx :dy dy :region region)))
 
-(defmethod  pixeled-rgba-unsafe-fn ((design pixeled-image-design))
+(defmethod  pixeled-design-rgba-get-unsafe-fn ((design pixeled-image-design))
   (with-slots (image dx dy region)
       design
     (image-rgba-get-fn image :dx dx :dy dy :region nil)))
@@ -144,8 +144,8 @@
   (%make-pixeled-design *pixeled-background-design*))
 
 (defun make-flipping-fn (design1 design2)
-  (let ((d1 (pixeled-rgba-fn (%make-pixeled-design design1)))
-	(d2 (pixeled-rgba-fn (%make-pixeled-design design2))))
+  (let ((d1 (pixeled-design-rgba-get-fn (%make-pixeled-design design1)))
+	(d2 (pixeled-design-rgba-get-fn (%make-pixeled-design design2))))
     (declare (type pixeled-design-fn d1 d2))
     (make-pixeled-flipping-design
      :color-fn (lambda (x y)
@@ -190,8 +190,8 @@
                                      (if (region-contains-region-p
                                           (pixeled-design-region pdesign)
                                           (make-rectangle* 0 0 (1- width) (1- height)))
-                                         (pixeled-rgba-unsafe-fn pdesign)
-                                         (pixeled-rgba-fn pdesign))))
+                                         (pixeled-design-rgba-get-unsafe-fn pdesign)
+                                         (pixeled-design-rgba-get-fn pdesign))))
                        (pattern-designs ink))))
     (declare (type (simple-array pixeled-design-fn (*)) designs))
     (make-pixeled-functional-design
@@ -208,8 +208,8 @@
          (design-fn (if (region-contains-region-p
                          (pixeled-design-region design)
                          (make-rectangle* 0 0 (1- width) (1- height)))
-                        (pixeled-rgba-unsafe-fn design)
-                        (pixeled-rgba-fn design))))
+                        (pixeled-design-rgba-get-unsafe-fn design)
+                        (pixeled-design-rgba-get-fn design))))
     (make-pixeled-functional-design
      :color-fn (lambda (x y)
                  (declare (type fixnum x y width height)
@@ -218,7 +218,7 @@
 
 (defgeneric %transform-design (design transformation)
   (:method (design transformation)
-    (let ((design-fn (pixeled-rgba-fn design)))
+    (let ((design-fn (pixeled-design-rgba-get-fn design)))
       (declare (type pixeled-design-fn design-fn))
       (make-pixeled-functional-design
        :color-fn (lambda (x y)
@@ -246,8 +246,8 @@
 
 (defgeneric compose-in-rgba-design (ink mask)
   (:method ((ink pixeled-design) (mask pixeled-design))
-    (let ((mask-fn (pixeled-rgba-fn mask))
-	  (ink-fn (pixeled-rgba-fn ink)))
+    (let ((mask-fn (pixeled-design-rgba-get-fn mask))
+	  (ink-fn (pixeled-design-rgba-get-fn ink)))
       (declare (type pixeled-design-fn ink-fn mask-fn))
       (make-pixeled-functional-design
        :color-fn (lambda (x y)
@@ -269,8 +269,8 @@
 
 (defgeneric compose-out-rgba-design (ink mask)
   (:method ((ink pixeled-design) (mask pixeled-design))
-    (let ((mask-fn (pixeled-rgba-fn mask))
-	  (ink-fn (pixeled-rgba-fn ink)))
+    (let ((mask-fn (pixeled-design-rgba-get-fn mask))
+	  (ink-fn (pixeled-design-rgba-get-fn ink)))
       (declare (type pixeled-design-fn ink-fn mask-fn))
       (make-pixeled-functional-design
        :color-fn (lambda (x y)
@@ -291,8 +291,8 @@
 
 (defgeneric compose-over-rgba-design (fore back)
   (:method ((fore pixeled-design) (back pixeled-design))
-    (let ((fore-fn (pixeled-rgba-fn fore))
-	  (back-fn (pixeled-rgba-fn back)))
+    (let ((fore-fn (pixeled-design-rgba-get-fn fore))
+	  (back-fn (pixeled-design-rgba-get-fn back)))
       (declare (type pixeled-design-fn fore-fn back-fn))
       (make-pixeled-functional-design
        :color-fn (lambda (x y)

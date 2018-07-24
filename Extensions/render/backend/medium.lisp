@@ -369,7 +369,7 @@
             (%medium-draw-image medium
                                 (if (typep image 'image)
                                     image
-                                    (coerce-image image 'rgb-image))
+                                    (coerce-image image :rgb :two-dim-array))
                                 (+ 0 (- min-x x1))
                                 (+ 0 (- min-y y1))
                                 (- max-x min-x)
@@ -408,7 +408,7 @@
             (%medium-draw-image medium
                                 (if (typep image 'image)
                                     image
-                                    (coerce-image image 'rgb-image))
+                                    (coerce-image image :rgb :two-dim-array))
                                 (+ 0 (- min-x x1))
                                 (+ 0 (- min-y y1))
                                 (- max-x min-x)
@@ -430,3 +430,16 @@
 (defmethod medium-force-output ((medium render-medium-mixin))
   (when (sheet-mirror (medium-sheet medium))
     (%mirror-force-output (sheet-mirror (medium-sheet medium)))))
+
+
+(defmethod make-image ((medium render-medium-mixin) (type (eql :rgba)) width height)
+  (make-instance 'rgba-image :width width :height height))
+
+(defmethod make-image ((medium render-medium-mixin) (type (eql :rgb)) width height)
+  (make-instance 'rgb-image :width width :height height))
+
+(defmethod make-image ((medium render-medium-mixin) (type (eql :gray)) width height)
+  (make-instance 'gray-image :width width :height height))
+
+(defmethod make-image ((medium render-medium-mixin) (type (eql :auto)) width height)
+  (make-instance 'rgb-image :width width :height height))

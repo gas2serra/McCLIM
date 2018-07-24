@@ -60,7 +60,7 @@
 
 (defmethod %create-mirror-image ((mirror image-mirror-mixin) width height)
   (with-slots (image image-family image-type) mirror
-    (setf image (make-image image-type width height image-family)))
+    (setf image (make-image image-family image-type width height )))
   (with-slots (dirty-region) mirror
     (setf dirty-region nil)))
 
