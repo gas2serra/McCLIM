@@ -183,8 +183,8 @@
         (clim-render:color->octets color)
       (dotimes (x w)
         (dotimes (y h)
-          (funcall fn x y r g b 100))))
-      image))
+          (funcall fn x y r g b (round (/ (* x y 255) (* w h)))))))
+    image))
 
 (defun render-image-test-fill-rgb-image (image color)
   (let ((fn (clim-render:image-rgb-set-fn image))
@@ -371,8 +371,7 @@ purple, olive."
   (flet ((test (w h color)
            (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
              (let* ((alpha-image
-                     ;;(clim-render:coerce-alpha-channel
-                      (render-image-test-read-gray-image path));;)
+                     (render-image-test-read-gray-image path))
                     (image (render-image-test-make-rgba-image
                             (clim-render:image-width alpha-image)
                             (clim-render:image-height alpha-image))))
@@ -392,8 +391,7 @@ purple, olive."
   (flet ((test (w h alpha)
            (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
              (let* ((alpha-image
-                     ;;(clim-render:coerce-alpha-channel
-                      (render-image-test-read-gray-image path));;)
+                     (render-image-test-read-gray-image path))
                     (image (render-image-test-make-rgba-image
                             (clim-render:image-width alpha-image)
                             (clim-render:image-height alpha-image)))
@@ -425,8 +423,7 @@ purple, olive."
   (flet ((test (w h alpha)
            (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
              (let* ((alpha-image
-                     ;;(clim-render:coerce-alpha-channel
-                      (render-image-test-read-gray-image path));;)
+                     (render-image-test-read-gray-image path))
                     (image (render-image-test-make-rgba-image
                             (clim-render:image-width alpha-image)
                             (clim-render:image-height alpha-image)))
@@ -458,8 +455,7 @@ purple, olive."
   (flet ((test (w h alpha)
            (let ((path (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
              (let* ((alpha-image
-                     ;;(clim-render:coerce-alpha-channel
-                      (render-image-test-read-gray-image path));;)
+                     (render-image-test-read-gray-image path))
                     (image (render-image-test-make-rgba-image
                             (clim-render:image-width alpha-image)
                             (clim-render:image-height alpha-image)))

@@ -612,7 +612,7 @@ Provided by: @code{mcclim-render/opticl}.
 @subsubsection Imago
 Provided by: @code{mcclim-render/imago}.
 
-@deffn {Function} {make-imago-adapter} imago-image
+@deffn {Function} {make-imago-image-adapter} imago-image
 
 @end deffn
 
