@@ -443,3 +443,7 @@
 
 (defmethod make-image ((medium render-medium-mixin) (type (eql :auto)) width height)
   (make-instance 'rgb-image :width width :height height))
+
+(defmethod mcclim-image:medium-free-image-design
+    ((medium render-medium-mixin) (design mcclim-image:rgb-image-design))
+  ())

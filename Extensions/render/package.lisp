@@ -25,6 +25,7 @@
    ;; design
    #:make-pixeled-design
    ;; image ops
+   #:image-pixels
    #:read-image
    #:write-image
    #:image-format-read-supported-p
@@ -95,7 +96,6 @@
    #:image-alpha-get-fn
    #:image-alpha-set-fn
    #:image-alpha-blend-fn
-   #:image-pixels
    #:basic-image
    #:image-design
    #:image-pattern
