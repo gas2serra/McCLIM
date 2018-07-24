@@ -1,6 +1,6 @@
 (in-package :mcclim-render-internals)
 
-(declaim (optimize speed))
+#+nil (declaim (optimize speed))
 
 ;;;
 ;;; utility functions
@@ -108,9 +108,9 @@
 
 (defun octets->color (red green blue)
   (make-rgb-color
-   (octet->color-value red)
-   (octet->color-value green)
-   (octet->color-value blue)))
+   (color-octet->value red)
+   (color-octet->value green)
+   (color-octet->value blue)))
 
 ;;; rgba->
 (declaim (inline rgba->rgb)

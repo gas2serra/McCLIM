@@ -1,6 +1,6 @@
 (in-package :mcclim-render-internals)
 
-;;(declaim (optimize speed))
+#+nil (declaim (optimize speed))
 
 ;;;
 ;;; Two dimensional array of pixels
@@ -138,6 +138,9 @@
       (setf (aref pixels (+ y dy) (+ x dx))
             gray))))
 
+;;;
+;;; making
+;;;
 (defmethod make-image ((medium (eql :two-dim-array)) (type (eql :rgba)) width height)
   (make-instance 'rgba-image :width width :height height))
 
@@ -149,4 +152,3 @@
 
 (defmethod make-image ((medium (eql :two-dim-array)) (type (eql :auto)) width height)
   (make-instance 'rgba-image :width width :height height))
-

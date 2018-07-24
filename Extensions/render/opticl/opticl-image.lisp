@@ -1,6 +1,6 @@
 (in-package :mcclim-render-internals)
 
-;;(declaim (optimize speed))
+#+nil (declaim (optimize speed))
 
 ;;;
 ;;; Opticl
@@ -10,11 +10,6 @@
 
 (defmethod image-medium ((image  opticl-image))
   :opticl)
-
-;;;
-;;; Adapters (read only)
-;;; 
-
 
 ;;;
 ;;; RGBA
@@ -88,6 +83,20 @@
       (setf (opticl:pixel pixels (+ y dy) (+ x dx))
             (values red green blue)))))
 
+#+nil (defmethod image-rgb-blend-fn ((image opticl-rgb-image) &key (dx 0) (dy 0))
+  (let ((pixels (image-pixels image)))
+    (declare (type opticl-rgb-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x y red green blue alpha)
+      (declare (type fixnum x y)
+               (type octet red green blue alpha))
+      (multiple-value-bind (r g b)
+          (opticl:pixel pixels (+ y dy) (+ x dx))
+        (multiple-value-bind (nr ng nb)
+            (octet-rgb-blend-function red green blue alpha r g b)
+          (setf (opticl:pixel pixels (+ y dy) (+ x dx))
+                (values nr ng nb)))))))
+
 ;;;
 ;;; Gray
 ;;;
@@ -127,8 +136,6 @@
 ;;;
 ;;; making
 ;;;
-
-
 (defun make-opticl-image (opticl-pixels)
   (opticl:with-image-bounds (height width channels) opticl-pixels
     (cond ((or (not channels)
@@ -154,6 +161,18 @@
           (t
            (error "unknown opticl image type (~A) of ~A channels"
                   (type-of opticl-pixels) channels)))))
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :rgba)) width height)
+  (make-instance 'opticl-rgba-image :width width :height height))
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :rgb)) width height)
+  (make-instance 'opticl-rgb-image :width width :height height))
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :gray)) width height)
+  (make-instance 'opticl-gray-image :width width :height height))
+
+(defmethod make-image ((medium (eql :opticl)) (type (eql :auto)) width height)
+  (make-instance 'opticl-rgba-image :width width :height height))
 
 ;;;
 ;;; I/O
@@ -190,18 +209,3 @@
 (define-opticl-image-file-writer :pbm #'opticl:write-pbm-stream)
 (define-opticl-image-file-writer :pgm #'opticl:write-pgm-stream)
 (define-opticl-image-file-writer :gif #'opticl:write-gif-stream)
-
-
-(defmethod make-image ((medium (eql :opticl)) (type (eql :rgba)) width height)
-  (make-instance 'opticl-rgba-image :width width :height height))
-
-(defmethod make-image ((medium (eql :opticl)) (type (eql :rgb)) width height)
-  (make-instance 'opticl-rgb-image :width width :height height))
-
-(defmethod make-image ((medium (eql :opticl)) (type (eql :gray)) width height)
-  (make-instance 'opticl-gray-image :width width :height height))
-
-(defmethod make-image ((medium (eql :opticl)) (type (eql :auto)) width height)
-  (make-instance 'opticl-rgba-image :width width :height height))
-
-

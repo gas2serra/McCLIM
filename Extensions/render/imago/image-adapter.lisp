@@ -26,5 +26,5 @@
                        (ldb (byte 8 0) p)))
              (values 0 0 0)))))))
 
-(defun make-imago-adapter (imago)
+(defun make-imago-image-adapter (imago)
   (make-instance 'imago-image-adapter :image imago))

@@ -82,7 +82,9 @@
 
 (defmethod copy-image :around ((src-img image-mixin) sx sy width height
                                (dst-img image-mixin) x y)
-  ;; TO FIX: check image bounds
+  (assert (and (>= sx 0) (>= sy 0) (>= x 0) (>= y 0) (>= width 0) (>= height 0)
+               (<= (+ sx width) (image-width src-img)) (<= (+ sy height) (image-height src-img))
+               (<= (+ x width) (image-width dst-img)) (<= (+ y height) (image-height dst-img))))
   (call-next-method src-img (round sx) (round sy) (round width) (round height)
                     dst-img (round x) (round y)))
 
@@ -111,7 +113,9 @@
 ;;;
 (defmethod blend-image :around ((src-img image-mixin) sx sy width height
                                 (dst-img image-mixin) x y &key (alpha 255))
-  ;; TO FIX: check image bounds
+  (assert (and (>= sx 0) (>= sy 0) (>= x 0) (>= y 0) (>= width 0) (>= height 0)
+               (<= (+ sx width) (image-width src-img)) (<= (+ sy height) (image-height src-img))
+               (<= (+ x width) (image-width dst-img)) (<= (+ y height) (image-height dst-img))))
   (call-next-method src-img (round sx) (round sy) (round width) (round height)
                     dst-img (round x) (round y) :alpha (round alpha)))
 
@@ -149,8 +153,8 @@
 ;;;
 ;;; make
 ;;;
-(defmethod make-image :around ((medium (eql :default)) type width height)
-  (call-next-method))
+(defmethod make-image :around (medium type width height)
+  (call-next-method medium type (round width) (round height)))
 
 (defmethod make-image ((medium (eql :default)) type width height)
   (make-image *default-image-medium* type width height))
@@ -206,7 +210,9 @@
 ;;;
 (defmethod copy-alpha-channel :around ((src-img image-mixin) sx sy width height
                                        (dst-img image-mixin) x y)
-  ;; TO FIX: check image bounds
+  (assert (and (>= sx 0) (>= sy 0) (>= x 0) (>= y 0) (>= width 0) (>= height 0)
+               (<= (+ sx width) (image-width src-img)) (<= (+ sy height) (image-height src-img))
+               (<= (+ x width) (image-width dst-img)) (<= (+ y height) (image-height dst-img))))
   (call-next-method src-img (round sx) (round sy) (round width) (round height)
                     dst-img (round x) (round y)))
 
@@ -274,11 +280,19 @@
                                  (width (image-width image))
                                  (height (image-height image))
                                  (stencil-dx 0) (stencil-dy 0))
-  ;; TO FIX: check image bounds
-  (call-next-method image design stencil :x (round x) :y (round y)
-                    :width (round width) :height (round height)
-                    :stencil-dx (and stencil-dx (round stencil-dx))
-                    :stencil-dy (and stencil-dy (round stencil-dy))))
+  (when (and (> width 0)
+             (> height 0))
+    (assert (and (>= x 0) (>= y 0) (>= width 0) (>= height 0)
+                 (<= (+ x width) (image-width image)) (<= (+ y height) (image-height image))
+                 (or (= width 0) (>= (+ x stencil-dx) 0))
+                 (or (= height 0) (>= (+ y stencil-dy) 0))
+                 (or (null stencil)
+                     (and (<= (+ x stencil-dx width) (image-width stencil))
+                          (<= (+ y stencil-dy height) (image-height stencil))))))
+    (call-next-method image design stencil :x (round x) :y (round y)
+                      :width (round width) :height (round height)
+                      :stencil-dx (and stencil-dx (round stencil-dx))
+                      :stencil-dy (and stencil-dy (round stencil-dy)))))
 
 (defmethod fill-image ((image image-mixin) design stencil 
                        &key x y width height stencil-dx stencil-dy)

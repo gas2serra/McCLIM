@@ -54,7 +54,7 @@
    ;; ch image
    #:make-ch-image-adapter
    #:make-opticl-image-adapter
-   #:make-imago-adapter
+   #:make-imago-image-adapter
    ))
 
 (defpackage :mcclim-render-extensions
