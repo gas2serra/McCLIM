@@ -83,20 +83,6 @@
       (setf (opticl:pixel pixels (+ y dy) (+ x dx))
             (values red green blue)))))
 
-#+nil (defmethod image-rgb-blend-fn ((image opticl-rgb-image) &key (dx 0) (dy 0))
-  (let ((pixels (image-pixels image)))
-    (declare (type opticl-rgb-image-pixels pixels)
-             (type fixnum dx dy))
-    (lambda (x y red green blue alpha)
-      (declare (type fixnum x y)
-               (type octet red green blue alpha))
-      (multiple-value-bind (r g b)
-          (opticl:pixel pixels (+ y dy) (+ x dx))
-        (multiple-value-bind (nr ng nb)
-            (octet-rgb-blend-function red green blue alpha r g b)
-          (setf (opticl:pixel pixels (+ y dy) (+ x dx))
-                (values nr ng nb)))))))
-
 ;;;
 ;;; Gray
 ;;;

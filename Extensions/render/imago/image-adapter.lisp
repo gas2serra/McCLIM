@@ -7,7 +7,6 @@
   (with-slots (img) image
     (imago:image-width img)))
 
-
 (defmethod image-height ((image imago-image-adapter))
   (with-slots (img) image
     (imago:image-width img)))

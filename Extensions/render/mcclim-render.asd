@@ -19,22 +19,25 @@
                (:file "compatibility")))
 
 (defsystem #:mcclim-render/render
-    :depends-on (#:mcclim-render/core #:cl-vectors)
+    :depends-on (#:mcclim-render/core)
     :components
     ((:module "render"
               :serial t
               :components
-              ((:file "prim-arc")
-               (:file "prim-text")))))
+              ((:file "render")
+               (:file "fonts")))))
 
 (defsystem #:mcclim-render/cl-vectors
-    :depends-on (#:clim-basic #:mcclim-fonts/truetype  #:mcclim-render/render #:mcclim-render/two-dim-array #:mcclim-render/opticl)
+    :depends-on (#:clim-basic #:mcclim-fonts/truetype  #:mcclim-render/render #:mcclim-render/two-dim-array #:mcclim-render/opticl #:mcclim-render/render #:mcclim-bezier)
     :components
     ((:module "cl-vectors"
               :serial t
               :components
               ((:file "vectors")
-               (:file "vectors-image-ops")))))
+               (:file "vectors-image-ops")
+               (:file "prim-arc")
+               (:file "prim-text")
+               (:file "vectors-render")))))
 
 (defsystem #:mcclim-render/two-dim-array
   :depends-on (#:mcclim-render/core)
@@ -51,10 +54,11 @@
                         :serial t
                         :components
                         ((:file "image-adapter")
-                         (:file "opticl-image")))))
+                         (:file "opticl-image")
+                         (:file "opticl-image-opt")))))
 
 (defsystem #:mcclim-render/backend
-    :depends-on (#:mcclim-render/cl-vectors)
+    :depends-on (#:mcclim-render/cl-vectors #:mcclim-bezier)
     :components
     ((:module "backend"
               :serial t

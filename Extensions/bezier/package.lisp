@@ -5,14 +5,6 @@
   (:import-from #:clim-null
                 #:null-medium)
 
-  (:import-from #:mcclim-render-internals
-                #:render-medium-mixin
-                #:make-path
-                #:line-to
-                #:curve-to
-                #:%medium-fill-paths
-                #:%medium-stroke-paths)
-
   (:import-from #:clim-postscript
                 #:*transformation*
                 #:postscript-medium

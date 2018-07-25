@@ -7,7 +7,6 @@
   (with-slots (img) image
     (ch-image:image-width img)))
 
-
 (defmethod image-height ((image ch-image-image-adapter))
   (with-slots (img) image
     (ch-image:image-width img)))

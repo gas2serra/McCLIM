@@ -20,7 +20,7 @@
                        :data (image-pixels img)))))
 
 (defmethod coerce-image ((image mcclim-image::rgb-image)
-                         (type (eql :rgb)) &optional medium)
+                         type &optional medium)
   (declare (ignore medium))
   (make-instance 'rgb-image
                  :width (mcclim-image::image-width image)

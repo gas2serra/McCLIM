@@ -38,18 +38,10 @@
 
 ;; gray
 (defmethod image-alpha-get-fn ((image gray-image-mixin) &key (dx 0) (dy 0) (region nil))
-  (let ((fn (image-gray-get-fn image :dx dx :dy dy :region region)))
-    (declare (type image-gray-get-fn fn))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (gray->alpha (funcall fn x y)))))
+  (image-gray-get-fn image :dx dx :dy dy :region region))
 
 (defmethod image-alpha-set-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
-  (let ((fn (image-gray-set-fn image :dx dx :dy dy)))
-    (declare (type image-gray-set-fn fn))
-    (lambda (x y alpha)
-      (declare (type fixnum x y alpha))
-      (funcall fn x y (alpha->gray alpha)))))
+  (image-gray-set-fn image :dx dx :dy dy))
 
 (defmethod image-gray-blend-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
   (let ((sfn (image-gray-set-fn image :dx dx :dy dy))

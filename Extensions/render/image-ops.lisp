@@ -280,6 +280,7 @@
                                  (width (image-width image))
                                  (height (image-height image))
                                  (stencil-dx 0) (stencil-dy 0))
+  (format *debug-io* "==fill> ~A ~A~%" design stencil)
   (when (and (> width 0)
              (> height 0))
     (assert (and (>= x 0) (>= y 0) (>= width 0) (>= height 0)
