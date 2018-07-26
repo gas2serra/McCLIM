@@ -495,15 +495,35 @@ purple, olive."
     (test 150 150 150 100
           200 10)))
 
-(define-render-image-test "13) fill color" (stream)
+(defun render-image-test-fill-color (stream design cx cy cw ch w h mode)
+  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
+    (let ((image (mcclim-render:coerce-image (render-image-test-read-rgb-image path) mode))
+          (pd (clim-render:make-pixeled-design design)))
+      (clim-render:fill-image image pd 
+                              nil :x cx :y cy :width cw :height ch)
+      (setf (mcclim-render-internals::pixeled-design-region pd)
+            (clim:make-rectangle* (+ cx cw 10) (+ cy 10) (+ cx cw cw -10) (+ cy ch -10)))
+      (clim-render:fill-image image pd 
+                              nil :x (+ cx cw) :y cy  :width cw :height ch)
+      (clim-render:draw-image* stream
+                               image
+                               w h))))
+
+(define-render-image-test "13) fill color (rgb)" (stream)
     ""
   (flet ((test (design cx cy cw ch w h)
-           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*)))
-             (let ((image (render-image-test-read-rgb-image path)))
-               (clim-render:fill-image image design nil :x cx :y cy :width cw :height ch)
-               (clim-render:draw-image* stream
-                                        image
-                                        w h)))))
+           (render-image-test-fill-color stream design cx cy cw ch w h :rgb)))
+    (test +red+
+          50 50 100 150
+          10 10)
+    (test (compose-in +green+ (make-opacity 0.5))
+          150 150 150 100
+          10 300)))
+
+(define-render-image-test "13) fill color (rgba)" (stream)
+    ""
+  (flet ((test (design cx cy cw ch w h)
+           (render-image-test-fill-color stream design cx cy cw ch w h :rgba)))
     (test +red+
           100 100 100 150
           10 10)
@@ -511,19 +531,61 @@ purple, olive."
           150 150 150 100
           10 300)))
 
-(define-render-image-test "14) fill stencil" (stream)
+(define-render-image-test "13) fill color (gray)" (stream)
     ""
   (flet ((test (design cx cy cw ch w h)
-           (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*))
-                 (path2 (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
-             (let ((image (render-image-test-read-rgb-image path))
-                   (stencil ;;(clim-render:coerce-alpha-channel
-                             (render-image-test-read-gray-image path2)));;)
-               (clim-render:fill-image image design stencil :x cx :y cy :width cw :height ch
-                                       :stencil-dx (- cx) :stencil-dy (- cy))
-               (clim-render:draw-image* stream
-                                        image
-                                        w h)))))
+           (render-image-test-fill-color stream design cx cy cw ch w h :gray)))
+    (test +red+
+          100 100 100 150
+          10 10)
+    (test (compose-in +green+ (make-opacity 0.5))
+          150 150 150 100
+          10 300)))
+
+(defun render-image-test-fill-stencil (stream design cx cy cw ch w h mode)
+  (let ((path (uiop/pathname:merge-pathnames* *testing-image-rgb-file* *testing-image-directory*))
+        (path2 (uiop/pathname:merge-pathnames* *testing-image-bn2-file* *testing-image-directory*)))
+    (let ((image (mcclim-render:coerce-image (render-image-test-read-rgb-image path) mode))
+          (stencil (render-image-test-read-gray-image path2))
+          (pd (clim-render:make-pixeled-design design)))
+      (clim-render:fill-image image pd 
+                              stencil :x cx :y cy :width cw :height ch
+                              :stencil-dx (- cx) :stencil-dy (- cy))
+      (setf (mcclim-render-internals::pixeled-design-region pd)
+            (clim:make-rectangle* (+ cx cw 10) (+ cy 10) (+ cx cw cw -10) (+ cy ch -10)))
+      (clim-render:fill-image image pd 
+                              stencil :x (+ cx cw) :y cy :width cw :height ch
+                              :stencil-dx (- (+ cx cw)) :stencil-dy (- cy))
+      (clim-render:draw-image* stream
+                               image
+                               w h))))
+
+(define-render-image-test "14) fill stencil (rgb)" (stream)
+    ""
+  (flet ((test (design cx cy cw ch w h)
+          (render-image-test-fill-stencil stream design cx cy cw ch w h :rgb)))
+    (test +red+
+          100 100 100 150
+          10 10)
+    (test (compose-in +green+ (make-opacity 0.7))
+          150 150 150 100
+          10 300)))
+
+(define-render-image-test "14) fill stencil (rgba)" (stream)
+    ""
+  (flet ((test (design cx cy cw ch w h)
+           (render-image-test-fill-stencil stream design cx cy cw ch w h :rgba)))
+    (test +red+
+          100 100 100 150
+          10 10)
+    (test (compose-in +green+ (make-opacity 0.5))
+          150 150 150 100
+          10 300)))
+
+(define-render-image-test "14) fill stencil (gray)" (stream)
+    ""
+  (flet ((test (design cx cy cw ch w h)
+           (render-image-test-fill-stencil stream design cx cy cw ch w h :gray)))
     (test +red+
           100 100 100 150
           10 10)

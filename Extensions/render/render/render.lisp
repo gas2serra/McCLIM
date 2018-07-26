@@ -61,7 +61,6 @@
 
 (defmethod render-draw-image* ((render image-render) image (src-img image-mixin)
                                to-x to-y)
-  ;;(format *debug-io* "render: draw image* ~%")
   (let* ((width (image-width src-img))
 	 (height (image-height src-img))
          (region

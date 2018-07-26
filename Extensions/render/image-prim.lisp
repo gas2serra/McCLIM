@@ -6,6 +6,20 @@
 ;;; image manipulation functions
 ;;;
 
+(deftype image-rgb-set-span-fn () '(function (fixnum fixnum fixnum fixnum octet octet octet)))
+(defgeneric image-rgb-set-span-fn (image &key dx dy))
+
+(defmethod image-rgb-set-span-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
+  (let ((fn (image-rgb-set-fn image :dx dx :dy dy)))
+    (declare (type image-rgb-set-fn fn))
+    (lambda (x1 y1 x2 y2 red green blue)
+      (declare (type fixnum x1 y1 x2 y2)
+               (type octet red green blue))
+      (loop for j from y1 to y2 do
+                (loop for i from x1 to x2 do
+                     (funcall fn i j red green blue))))))
+
+
 ;; rgba
 (deftype image-gray-alpha-get-fn () '(function (fixnum fixnum) (values octet octet)))
 (deftype image-rgba-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
