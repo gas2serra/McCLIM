@@ -3,144 +3,292 @@
 #+nil (declaim (optimize speed))
 
 ;;;
-;;; image manipulation functions
+;;; Utilities
 ;;;
+(defparameter *alpha-epsilon* 10)
 
-(deftype image-rgb-set-span-fn () '(function (fixnum fixnum fixnum fixnum octet octet octet)))
-(defgeneric image-rgb-set-span-fn (image &key dx dy))
+(defmacro do-copy-image (src-img sx sy width height dst-img x y (i-var j-var) &body code)
+  `(progn
+     (let ((max-y (+ ,y ,height -1))
+           (max-x (+ ,x ,width -1)))
+       (declare (type fixnum max-x max-y))
+       (flet ((copy-ff ()
+                (loop for ,j-var fixnum from y to max-y do
+                     (loop for ,i-var fixnum from x to max-x do
+                          ,@code)))
+              (copy-bf ()
+                  (loop for ,j-var fixnum from y to max-y do
+                       (loop for ,i-var fixnum from max-x downto x do
+                            ,@code)))
+              (copy-fb ()
+                  (loop for ,j-var fixnum from max-y downto y do
+                       (loop for ,i-var fixnum from x to max-x do
+                            ,@code)))
+                (copy-bb ()
+                  (loop for ,j-var fixnum from max-y downto y do
+                       (loop for ,i-var fixnum from max-x downto x do
+                            ,@code))))
+         (when (and (> ,width 0) (> ,height 0))
+           (if (eq ,src-img ,dst-img)
+               (cond
+                 ((and (<= ,sx ,x) (<= ,sy ,y))
+                  (copy-bb))
+                 ((and (<= ,sx ,x) (> ,sy ,y))
+                  (copy-bf))
+                 ((and (> ,sx ,x) (<= ,sy ,y))
+                  (copy-fb))
+                 ((and (> ,sx ,x) (> ,sy ,y))
+                  (copy-ff)))
+               (copy-ff))))
+       (make-rectangle* ,x ,y (+ ,x ,width) (+ ,y ,height)))))
 
-(defmethod image-rgb-set-span-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
-  (let ((fn (image-rgb-set-fn image :dx dx :dy dy)))
-    (declare (type image-rgb-set-fn fn))
-    (lambda (x1 y1 x2 y2 red green blue)
-      (declare (type fixnum x1 y1 x2 y2)
-               (type octet red green blue))
-      (loop for j from y1 to y2 do
-                (loop for i from x1 to x2 do
-                     (funcall fn i j red green blue))))))
-
-
-;; rgba
-(deftype image-gray-alpha-get-fn () '(function (fixnum fixnum) (values octet octet)))
-(deftype image-rgba-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
-;; rgb
-(deftype image-rgb-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
-(deftype image-rgb-xor-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
-;; gray
-(deftype image-gray-blend-fn () '(function (fixnum fixnum octet octet)))
-;; alpha
-(deftype image-alpha-get-fn () '(function (fixnum fixnum) octet))
-(deftype image-alpha-set-fn () '(function (fixnum fixnum octet )))
-(deftype image-alpha-blend-fn () '(function (fixnum fixnum octet octet)))
-
-;; rgba
-(defgeneric image-gray-alpha-get-fn (image &key dx dy region))
-(defgeneric image-rgba-blend-fn (image &key dx dy))
-;; rgb
-(defgeneric image-rgb-blend-fn (image &key dx dy))
-(defgeneric image-rgb-xor-blend-fn (image &key dx dy))
-;; gray
-(defgeneric image-gray-blend-fn (image &key dx dy))
-;; alpha
-(defgeneric image-alpha-get-fn (image &key dx dy region))
-(defgeneric image-alpha-set-fn (image &key dx dy))
-(defgeneric image-alpha-blend-fn (image &key dx dy))
 
 ;;;
-;;; defaults
+;;; generic primitives
 ;;;
 
-;; gray
-(defmethod image-alpha-get-fn ((image gray-image-mixin) &key (dx 0) (dy 0) (region nil))
-  (image-gray-get-fn image :dx dx :dy dy :region region))
+;; -fn
+(declaim (inline %image-get-fn %image-set-fn %image-set-span-fn %image-blend-fn))
+(defun %image-get-fn (image &key (dx 0) (dy 0) region)
+  (case (image-type image)
+    (:rgba
+     (image-rgba-get-fn image :dx dx :dy dy :region region))
+    (:rgb
+     (image-rgb-get-fn image :dx dx :dy dy :region region))
+    (:gray
+     (image-gray-get-fn image :dx dx :dy dy :region region))))
+(defun %image-set-fn (image &key (dx 0) (dy 0))
+  (case (image-type image)
+    (:rgba
+     (image-rgba-set-fn image :dx dx :dy dy))
+    (:rgb
+     (image-rgb-set-fn image :dx dx :dy dy))
+    (:gray
+     (image-gray-set-fn image :dx dx :dy dy))))
+(defun %image-set-span-fn (image &key (dx 0) (dy 0))
+  (case (image-type image)
+    (:rgba
+     (image-rgba-set-span-fn image :dx dx :dy dy))
+    (:rgb
+     (image-rgb-set-span-fn image :dx dx :dy dy))
+    (:gray
+     (image-gray-set-span-fn image :dx dx :dy dy))))
+(defun %image-blend-fn (image &key (dx 0) (dy 0))
+   (case (image-type image)
+     (:rgba
+      (image-rgba-blend-fn image :dx dx :dy dy))
+     (:rgb
+      (image-rgb-blend-fn image :dx dx :dy dy))
+     (:gray
+      (image-gray-blend-fn image :dx dx :dy dy))))
+(defun %image-blend-span-fn (image &key (dx 0) (dy 0))
+   (case (image-type image)
+     (:rgba
+      (image-rgba-blend-span-fn image :dx dx :dy dy))
+     (:rgb
+      (image-rgb-blend-span-fn image :dx dx :dy dy))
+     (:gray
+      (image-gray-blend-span-fn image :dx dx :dy dy))))
+;; call-
+(declaim (inline %call-image-rgba-get-fn))
+(defun %call-image-rgba-get-fn (image-type get-fn x y)
+  (declare (type fixnum x y))
+  (multiple-value-bind (red green blue alpha)
+      (case image-type
+        (:rgba
+         (let ()
+           (declare (type image-rgba-get-fn get-fn))
+           (funcall get-fn x y)))
+        (:rgb
+         (let ()
+           (declare (type image-rgb-get-fn get-fn))
+           (multiple-value-bind (r g b)
+               (funcall get-fn x y)
+             (rgb->rgba r g b))))
+        (:gray
+         (let ()
+           (declare (type image-gray-get-fn get-fn))
+           (multiple-value-bind (g)
+               (funcall get-fn x y)
+             (gray->rgba g)))))
+    (values red green blue alpha)))
+(declaim (inline %call-image-rgb-get-fn))
+(defun %call-image-rgb-get-fn (image-type get-fn x y)
+  (declare (type fixnum x y))
+  (multiple-value-bind (red green blue)
+      (case image-type
+        (:rgba
+         (let ()
+           (declare (type image-rgba-get-fn get-fn))
+           (funcall get-fn x y)))
+        (:rgb
+         (let ()
+           (declare (type image-rgb-get-fn get-fn))
+           (funcall get-fn x y)))
+        (:gray
+         (let ()
+           (declare (type image-gray-get-fn get-fn))
+           (multiple-value-bind (g)
+               (funcall get-fn x y)
+             (gray->rgb g)))))
+    (values red green blue)))
+(declaim (inline %call-image-gray-get-fn))
+(defun %call-image-gray-get-fn (image-type get-fn x y)
+  (declare (type fixnum x y))
+  (multiple-value-bind (gray)
+      (case image-type
+        (:rgba
+         (let ()
+           (declare (type image-rgba-get-fn get-fn))
+           (multiple-value-bind (red green blue alpha)
+               (funcall get-fn x y)
+             (rgba->gray red green blue alpha))))
+        (:rgb
+         (let ()
+           (declare (type image-rgb-get-fn get-fn))
+           (multiple-value-bind (red green blue)
+               (funcall get-fn x y)
+             (rgb->gray red green blue))))
+        (:gray
+         (let ()
+           (declare (type image-gray-get-fn get-fn))
+           (funcall get-fn x y))))
+    (values gray)))
 
-(defmethod image-alpha-set-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
-  (image-gray-set-fn image :dx dx :dy dy))
+;; call-
+(declaim (inline %call-image-copy-fn))
+(defun %call-image-copy-fn (src-image-type dst-image-type get-fn set-fn x y)
+  (declare (type fixnum x y)
+           (type symbol src-image-type dst-image-type))
+  (case dst-image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-set-fn set-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (funcall set-fn x y red green blue alpha))))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-set-fn set-fn))
+       (multiple-value-bind (red green blue)
+           (%call-image-rgb-get-fn src-image-type get-fn x y)
+         (funcall set-fn x y red green blue))))
+    (:gray
+     (let ()
+       (declare (type image-gray-set-fn set-fn))
+       (multiple-value-bind (gray)
+           (%call-image-gray-get-fn src-image-type get-fn x y)
+       (funcall set-fn x y gray))))))
 
-(defmethod image-gray-blend-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
-  (let ((sfn (image-gray-set-fn image :dx dx :dy dy))
-        (gfn (image-gray-get-fn image :dx dx :dy dy)))
-    (declare (type image-gray-get-fn gfn)
-             (type image-gray-set-fn sfn))
-    (lambda (x y gray alpha)
-      (declare (type fixnum x y gray alpha))
-      (let ((g (funcall gfn x y)))
-        (funcall sfn x y (octet-gray-blend-function gray alpha g))))))
+(declaim (inline %call-image-blend-fn))
+(defun %call-image-blend-fn (src-image-type dst-image-type get-fn blend-fn x y salpha)
+  (declare (type fixnum x y)
+           (type octet salpha)
+           (type symbol src-image-type dst-image-type))
+  (case dst-image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-blend-fn blend-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (setf alpha (octet-mult salpha alpha))
+         (when (> alpha *alpha-epsilon*)
+           (funcall blend-fn x y red green blue alpha)))))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-blend-fn blend-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (setf alpha (octet-mult salpha alpha))
+         (when (> alpha *alpha-epsilon*)
+           (funcall blend-fn x y red green blue alpha)))))
+    (:gray
+     (let ()
+       (declare (type image-gray-blend-fn blend-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (setf alpha (octet-mult salpha alpha)) 
+         (when (> alpha *alpha-epsilon*)
+           (funcall blend-fn x y (rgb->gray red green blue) alpha)))))))
 
-;; rgb
-(defmethod image-alpha-get-fn ((image rgb-image-mixin) &key (dx 0) (dy 0) (region nil))
-  (let ((fn (image-rgb-get-fn image :dx dx :dy dy :region region)))
-    (declare (type image-rgb-get-fn fn))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (multiple-value-bind (r g b)
-          (funcall fn x y)
-        (rgb->alpha r g b)))))
-(defmethod image-rgb-blend-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
-  (let ((sfn (image-rgb-set-fn image :dx dx :dy dy))
-        (gfn (image-rgb-get-fn image :dx dx :dy dy)))
-    (declare (type image-rgb-get-fn gfn)
-             (type image-rgb-set-fn sfn))
-    (lambda (x y red green blue alpha)
-      (declare (type fixnum x y red green blue alpha))
-      (multiple-value-bind (r g b) (funcall gfn x y)
-        (multiple-value-bind (nr ng nb)
-            (octet-rgb-blend-function red green blue alpha r g b)
-        (funcall sfn x y nr ng nb))))))
-(defmethod image-rgb-xor-blend-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
-  (let ((sfn (image-rgb-set-fn image :dx dx :dy dy))
-        (gfn (image-rgb-get-fn image :dx dx :dy dy)))
-    (declare (type image-rgb-get-fn gfn)
-             (type image-rgb-set-fn sfn))
-    (lambda (x y red green blue alpha)
-      (declare (type fixnum x y red green blue alpha))
-      (multiple-value-bind (r g b) (funcall gfn x y)
-        (multiple-value-bind (nr ng nb)
-            (octet-rgb-blend-function
-            (color-octet-xor r red)
-            (color-octet-xor g green)
-            (color-octet-xor b blue)
-            alpha r g b)
-          (funcall sfn x y nr ng nb))))))
 
-;;; rgba
-(defmethod image-alpha-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
-  (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))
-    (declare (type image-rgba-get-fn fn))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (multiple-value-bind (r g b a)
-          (funcall fn x y)
-        (rgba->alpha r g b a)))))
+(declaim (inline %fill-image-fn))
+(defun %call-fill-image-fn (image-type blend-fn x y red green blue alpha)
+  (declare (type octet red green blue alpha *alpha-epsilon*))
+  (case image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-blend-fn blend-fn))
+       (when (> alpha *alpha-epsilon*)
+         (funcall blend-fn x y red green blue alpha))))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-blend-fn blend-fn))
+       (when (> alpha *alpha-epsilon*)
+         (funcall blend-fn x y red green blue alpha))))
+    (:gray
+     (let ()
+       (declare (type image-gray-blend-fn blend-fn))
+       (when (> alpha *alpha-epsilon*)
+         (funcall blend-fn x y (rgb->gray red green blue) alpha))))))
 
-(defmethod image-gray-alpha-get-fn ((image rgba-image-mixin) &key (dx 0) (dy 0) (region nil))
-  (let ((fn (image-rgba-get-fn image :dx dx :dy dy :region region)))
-    (declare (type image-rgba-get-fn fn))
-    (lambda (x y)
-      (declare (type fixnum x y))
-      (multiple-value-bind (r g b a)
-          (funcall fn x y)
-        (rgba->gray-alpha r g b a)))))
+(declaim (inline %call-fill-image-span-fn))
+(defun %call-fill-image-span-fn (image-type blend-fn x1 y1 x2 y2 red green blue alpha)
+  (declare (type octet red green blue alpha *alpha-epsilon*)
+           (type fixnum x1 x2 y1 y2))
+  (case image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-blend-span-fn blend-fn))
+       (funcall blend-fn x1 y1 x2 y2 red green blue alpha)))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-blend-span-fn blend-fn))
+       (funcall blend-fn x1 y1 x2 y2 red green blue alpha)))
+    (:gray
+     (let ()
+       (declare (type image-gray-blend-span-fn blend-fn))
+       (funcall blend-fn x1 y1 x2 y2 (rgb->gray red green blue) alpha)))))
 
-(defmethod image-rgba-blend-fn ((image rgba-image-mixin) &key (dx 0) (dy 0))
-  (let ((sfn (image-rgba-set-fn image :dx dx :dy dy))
-        (gfn (image-rgba-get-fn image :dx dx :dy dy)))
-    (declare (type image-rgba-get-fn gfn)
-             (type image-rgba-set-fn sfn))
-    (lambda (x y red green blue alpha)
-      (declare (type fixnum x y red green blue alpha))
-      (multiple-value-bind (r g b a) (funcall gfn x y)
-        (multiple-value-bind (nr ng nb na)
-            (octet-rgba-blend-function red green blue alpha r g b a)
-          (funcall sfn x y nr ng nb na))))))
+;; set
+(declaim (inline %set-image-fn))
+(defun %call-set-image-fn (image-type set-fn x y red green blue alpha)
+  (declare (type octet red green blue alpha *alpha-epsilon*))
+  (case image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-set-fn set-fn))
+       (funcall set-fn x y red green blue alpha)))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-set-fn set-fn))
+       (multiple-value-bind (r g b)
+           (rgba->rgb red green blue alpha)
+         (funcall set-fn x y r g b))))
+    (:gray
+     (let ()
+       (declare (type image-gray-set-fn set-fn))
+       (funcall set-fn x y (rgba->gray red green blue alpha))))))
 
-(defmethod image-alpha-set-fn ((image rgba-image-mixin) &key (dx 0) (dy 0))
-  (let ((sfn (image-rgba-set-fn image :dx dx :dy dy))
-        (gfn (image-rgba-get-fn image :dx dx :dy dy)))
-    (declare (type image-rgba-get-fn gfn)
-             (type image-rgba-set-fn sfn))
-    (lambda (x y alpha)
-      (declare (type fixnum x y alpha))
-      (multiple-value-bind (r g b a) (funcall gfn x y)
-        (declare (ignore a))
-        (funcall sfn x y r g b alpha)))))
+(declaim (inline %call-set-image-span-fn))
+(defun %call-set-image-span-fn (image-type set-fn x1 y1 x2 y2 red green blue alpha)
+  (declare (type octet red green blue alpha *alpha-epsilon*)
+           (type fixnum x1 x2 y1 y2))
+  (case image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-set-span-fn set-fn))
+       (funcall set-fn x1 y1 x2 y2 red green blue alpha)))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-set-span-fn set-fn))
+       (multiple-value-bind (r g b)
+           (rgba->rgb red green blue alpha)
+         (funcall set-fn x1 y1 x2 y2 r g b))))
+    (:gray
+     (let ()
+       (declare (type image-gray-set-span-fn set-fn))
+       (funcall set-fn x1 y1 x2 y2 (rgba->gray red green blue alpha))))))
+
+
+

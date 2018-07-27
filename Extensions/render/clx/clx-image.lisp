@@ -75,7 +75,7 @@
 ;;;
 (deftype clx-basic-image-pixels () '(simple-array (unsigned-byte 32) (* *)))
 
-(defclass clx-basic-image (clx-image rgb-image-mixin)
+(defclass clx-basic-image (clx-image)
   ((pixels :type clx-basic-image-pixels)))
 
 (defmethod initialize-instance :after ((image clx-basic-image)

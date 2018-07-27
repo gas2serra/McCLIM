@@ -36,6 +36,7 @@
    #:copy-image
    #:blend-image
    #:crop-image
+   #:set-image
    #:fill-image
    #:coerce-alpha-channel
    #:clone-alpha-channel
