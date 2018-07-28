@@ -58,8 +58,8 @@
          (declare (type fixnum max-x max-y))
          (loop for ,j-var fixnum from ,y to max-y do
               (loop for ,i-var fixnum from ,x to max-x do
-                   ,@code)))
-       (make-rectangle* x y (+ x width) (+ y height)))))
+                   ,@code))))
+     (make-rectangle* ,x ,y (+ ,x ,width) (+ ,y ,height))))
 
 (defmacro do-copy-image (src-img sx sy width height dst-img x y (i-var j-var) &body code)
   `(progn
@@ -94,7 +94,7 @@
                  ((and (> ,sx ,x) (> ,sy ,y))
                   (copy-ff)))
                (copy-ff)))))
-     (make-rectangle* x y (+ x width) (+ y height))))
+     (make-rectangle* ,x ,y (+ ,x ,width) (+ ,y ,height))))
 
 ;;;
 ;;; generic primitives
@@ -127,21 +127,37 @@
     (:gray
      (image-gray-set-span-fn image :dx dx :dy dy))))
 (defun %image-blend-fn (image &key (dx 0) (dy 0))
-   (case (image-type image)
-     (:rgba
-      (image-rgba-blend-fn image :dx dx :dy dy))
-     (:rgb
-      (image-rgb-blend-fn image :dx dx :dy dy))
-     (:gray
-      (image-gray-blend-fn image :dx dx :dy dy))))
+  (case (image-type image)
+    (:rgba
+     (image-rgba-blend-fn image :dx dx :dy dy))
+    (:rgb
+     (image-rgb-blend-fn image :dx dx :dy dy))
+    (:gray
+     (image-gray-blend-fn image :dx dx :dy dy))))
+(defun %image-xor-blend-fn (image &key (dx 0) (dy 0))
+  (case (image-type image)
+    (:rgba
+     (image-rgba-xor-blend-fn image :dx dx :dy dy))
+    (:rgb
+     (image-rgb-xor-blend-fn image :dx dx :dy dy))
+    (:gray
+     (image-gray-xor-blend-fn image :dx dx :dy dy))))
 (defun %image-blend-span-fn (image &key (dx 0) (dy 0))
-   (case (image-type image)
-     (:rgba
-      (image-rgba-blend-span-fn image :dx dx :dy dy))
-     (:rgb
-      (image-rgb-blend-span-fn image :dx dx :dy dy))
-     (:gray
-      (image-gray-blend-span-fn image :dx dx :dy dy))))
+  (case (image-type image)
+    (:rgba
+     (image-rgba-blend-span-fn image :dx dx :dy dy))
+    (:rgb
+     (image-rgb-blend-span-fn image :dx dx :dy dy))
+    (:gray
+     (image-gray-blend-span-fn image :dx dx :dy dy))))
+(defun %image-xor-blend-span-fn (image &key (dx 0) (dy 0))
+  (case (image-type image)
+    (:rgba
+     (image-rgba-xor-blend-span-fn image :dx dx :dy dy))
+    (:rgb
+     (image-rgb-xor-blend-span-fn image :dx dx :dy dy))
+    (:gray
+     (image-gray-xor-blend-span-fn image :dx dx :dy dy))))
 ;; call-
 (declaim (inline %call-image-rgba-get-fn))
 (defun %call-image-rgba-get-fn (image-type get-fn x y)

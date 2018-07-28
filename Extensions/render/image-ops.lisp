@@ -47,7 +47,8 @@
 (defmethod copy-image :around ((src-img image-mixin) sx sy width height
                                (dst-img image-mixin) x y)
   (with-copy-image-bounds (src-img sx sy width height dst-img x y)
-    (call-next-method src-img sx sy width height dst-img x y)))
+    (call-next-method src-img sx sy width height dst-img x y)
+    (make-rectangle* x y (+ x width) (+ y height))))
 
 (declaim (inline %call-image-copy-fn))
 (defun %call-image-copy-fn (src-image-type dst-image-type get-fn set-fn x y)
@@ -160,7 +161,8 @@
 (defmethod copy-alpha-channel :around ((src-img image-mixin) sx sy width height
                                        (dst-img image-mixin) x y)
   (with-copy-image-bounds (src-img sx sy width height dst-img x y)
-    (call-next-method src-img sx sy width height dst-img x y)))
+    (call-next-method src-img sx sy width height dst-img x y)
+    (make-rectangle* x y (+ x width) (+ y height))))
 
 (defmethod copy-alpha-channel ((src-img image-mixin) sx sy width height
                                (dst-img image-mixin) x y)
@@ -229,8 +231,8 @@
   (declare (type octet red green blue alpha))
   (with-set-image-bounds (image x y width height)
     (call-next-method image red green blue :alpha alpha
-                      :x x :y y :width width :height height))
-  (make-rectangle* x y (+ x width) (+ y height)))
+                      :x x :y y :width width :height height)
+    (make-rectangle* x y (+ x width) (+ y height))))
 
 (defmethod set-image-color ((image image-mixin) red green blue &key alpha x y width height)
   (declare (type fixnum x y width height))

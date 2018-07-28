@@ -77,3 +77,15 @@
                     (progn
                       (setf (opticl:pixel pixels (+ y dy) (+ x dx))
                             (values red green blue)))))))))
+
+(defmethod image-gray-set-span-fn ((image opticl-gray-image) &key (dx 0) (dy 0))
+   (let ((pixels (image-pixels image)))
+    (declare (type opticl-gray-image-pixels pixels)
+             (type fixnum dx dy))
+    (lambda (x1 y1 x2 y2 gray)
+      (declare (type fixnum x1 y1 x2 y2)
+               (type octet gary))
+      (loop for y from y1 to y2 do
+           (loop for x from x1 to x2 do
+                (progn
+                  (setf (opticl:pixel pixels (+ y dy) (+ x dx)) gray)))))))

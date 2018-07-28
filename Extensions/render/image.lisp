@@ -189,6 +189,21 @@ file to be read.")
       (let ((g (funcall gfn x y)))
         (funcall sfn x y (octet-gray-blend-function gray alpha g))))))
 ;; xor
+(deftype image-rgba-xor-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
+(defgeneric image-rgba-xor-blend-fn (image &key dx dy))
+(defmethod image-rgba-xor-blend-fn ((image rgba-image-mixin) &key (dx 0) (dy 0))
+  (warn "using unoptimized function: image-rgba-xor-blend-fn")
+  (let ((sfn (image-rgba-set-fn image :dx dx :dy dy))
+        (gfn (image-rgba-get-fn image :dx dx :dy dy)))
+    (declare (type image-rgba-get-fn gfn)
+             (type image-rgba-set-fn sfn))
+    (lambda (x y red green blue alpha)
+      (declare (type fixnum x y red green blue alpha))
+      (multiple-value-bind (r g b a) (funcall gfn x y)
+        (multiple-value-bind (nr ng nb na)
+            (octet-rgba-blend-function (color-octet-xor r red) (color-octet-xor g green)
+                                       (color-octet-xor b blue) alpha r g b a)
+          (funcall sfn x y nr ng nb na))))))
 (deftype image-rgb-xor-blend-fn () '(function (fixnum fixnum octet octet octet octet)))
 (defgeneric image-rgb-xor-blend-fn (image &key dx dy))
 (defmethod image-rgb-xor-blend-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
@@ -201,12 +216,23 @@ file to be read.")
       (declare (type fixnum x y red green blue alpha))
       (multiple-value-bind (r g b) (funcall gfn x y)
         (multiple-value-bind (nr ng nb)
-            (octet-rgb-blend-function
-            (color-octet-xor r red)
-            (color-octet-xor g green)
-            (color-octet-xor b blue)
-            alpha r g b)
+            (octet-rgb-blend-function (color-octet-xor r red) (color-octet-xor g green)
+                                      (color-octet-xor b blue) alpha r g b)
           (funcall sfn x y nr ng nb))))))
+(deftype image-gray-xor-blend-fn () '(function (fixnum fixnum octet octet)))
+(defgeneric image-gray-xor-blend-fn (image &key dx dy))
+(defmethod image-gray-xor-blend-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
+  (warn "using unoptimized function: image-rgba-xor-blend-fn")
+  (let ((sfn (image-gray-set-fn image :dx dx :dy dy))
+        (gfn (image-gray-get-fn image :dx dx :dy dy)))
+    (declare (type image-gray-get-fn gfn)
+             (type image-gray-set-fn sfn))
+    (lambda (x y gray alpha)
+      (declare (type fixnum x y gray alpha))
+      (multiple-value-bind (g) (funcall gfn x y)
+        (multiple-value-bind (ng)
+            (octet-gray-blend-function (color-octet-xor g gray) alpha g)
+          (funcall sfn x y ng))))))
 ;; alpha
 (deftype image-alpha-get-fn () '(function (fixnum fixnum) octet))
 (defgeneric image-alpha-get-fn (image &key dx dy region))
@@ -318,7 +344,46 @@ file to be read.")
       (loop for y from y1 to y2 do
            (loop for x from x1 to x2 do
                 (funcall fn x y gray alpha))))))
-
+;;; span - xor
+(deftype image-rgba-xor-blend-span-fn () '(function (fixnum fixnum fixnum fixnum
+                                                 octet octet octet octet)))
+(defgeneric image-rgba-xor-blend-span-fn (image &key dx dy))
+(defmethod image-rgba-xor-blend-span-fn ((image rgba-image-mixin) &key (dx 0) (dy 0))
+  (warn "using unoptimized function: image-rgba-xor-blend-span-fn")
+  (let ((fn (image-rgba-xor-blend-fn image :dx dx :dy dy)))
+    (declare (type image-rgba-xor-blend-fn fn))
+    (lambda (x1 y1 x2 y2 red green blue alpha)
+      (declare (type fixnum x1 y1 x2 y2)
+               (type octet red green blue alpha))
+      (loop for y from y1 to y2 do
+           (loop for x from x1 to x2 do
+                (funcall fn x y red green blue alpha))))))
+(deftype image-rgb-xor-blend-span-fn () '(function (fixnum fixnum fixnum fixnum
+                                                 octet octet octet octet)))
+(defgeneric image-rgb-xor-blend-span-fn (image &key dx dy))
+(defmethod image-rgb-xor-blend-span-fn ((image rgb-image-mixin) &key (dx 0) (dy 0))
+  (warn "using unoptimized function: image-rgb-xor-blend-span-fn")
+  (let ((fn (image-rgb-xor-blend-fn image :dx dx :dy dy)))
+    (declare (type image-rgb-xor-blend-fn fn))
+    (lambda (x1 y1 x2 y2 red green blue alpha)
+      (declare (type fixnum x1 y1 x2 y2)
+               (type octet red green blue alpha))
+      (loop for y from y1 to y2 do
+           (loop for x from x1 to x2 do
+                (funcall fn x y red green blue alpha))))))
+(deftype image-gray-xor-blend-span-fn () '(function (fixnum fixnum fixnum fixnum
+                                                 octet octet)))
+(defgeneric image-gray-xor-blend-span-fn (image &key dx dy))
+(defmethod image-gray-xor-blend-span-fn ((image gray-image-mixin) &key (dx 0) (dy 0))
+  (warn "using unoptimized function: image-gray-xor-blend-span-fn")
+  (let ((fn (image-gray-xor-blend-fn image :dx dx :dy dy)))
+    (declare (type image-gray-xor-blend-fn fn))
+    (lambda (x1 y1 x2 y2 gray alpha)
+      (declare (type fixnum x1 y1 x2 y2)
+               (type octet gray alpha))
+      (loop for y from y1 to y2 do
+           (loop for x from x1 to x2 do
+                (funcall fn x y gray alpha))))))
 ;;;
 ;;; Image operations
 ;;;

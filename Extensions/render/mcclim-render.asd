@@ -33,7 +33,8 @@
     ((:module "cl-vectors"
               :serial t
               :components
-              ((:file "vectors")
+              ((:file "vectors-paths")
+               (:file "vectors")
                (:file "vectors-image-ops")
                (:file "prim-arc")
                (:file "prim-text")
