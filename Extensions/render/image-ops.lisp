@@ -8,8 +8,8 @@
 (defvar *default-image-medium* :two-dim-array)
 
 (defmethod make-image :around (medium type width height)
-  ;; TO FIX ROUNDING
-  (call-next-method medium type (round width) (round height)))
+  (with-make-image-bounds (width height)
+    (call-next-method medium type width height)))
 
 (defmethod make-image ((medium (eql :default)) type width height)
   (make-image *default-image-medium* type width height))
@@ -46,12 +46,35 @@
 ;;;
 (defmethod copy-image :around ((src-img image-mixin) sx sy width height
                                (dst-img image-mixin) x y)
-  ;; TO FIX ROUNDING
-  (assert (and (>= sx 0) (>= sy 0) (>= x 0) (>= y 0) (>= width 0) (>= height 0)
-               (<= (+ sx width) (image-width src-img)) (<= (+ sy height) (image-height src-img))
-               (<= (+ x width) (image-width dst-img)) (<= (+ y height) (image-height dst-img))))
-  (call-next-method src-img (round sx) (round sy) (round width) (round height)
-                    dst-img (round x) (round y)))
+  (with-copy-image-bounds (src-img sx sy width height dst-img x y)
+    (call-next-method src-img sx sy width height dst-img x y)))
+
+(declaim (inline %call-image-copy-fn))
+(defun %call-image-copy-fn (src-image-type dst-image-type get-fn set-fn x y)
+  (declare (type fixnum x y)
+           (type symbol src-image-type dst-image-type))
+  (case dst-image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-set-fn set-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (declare (type octet red green blue alpha))
+         (funcall set-fn x y red green blue alpha))))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-set-fn set-fn))
+       (multiple-value-bind (red green blue)
+           (%call-image-rgb-get-fn src-image-type get-fn x y)
+         (declare (type octet red green blue))
+         (funcall set-fn x y red green blue))))
+    (:gray
+     (let ()
+       (declare (type image-gray-set-fn set-fn))
+       (multiple-value-bind (gray)
+           (%call-image-gray-get-fn src-image-type get-fn x y)
+         (declare (type octet gray))
+         (funcall set-fn x y gray))))))
 
 (defmethod copy-image ((src-img image-mixin) sx sy width height
                        (dst-img image-mixin) x y)
@@ -71,12 +94,40 @@
 ;;;
 (defmethod blend-image :around ((src-img image-mixin) sx sy width height
                                 (dst-img image-mixin) x y &key (alpha 255))
-  ;; TO FIX ROUNDING
-  (assert (and (>= sx 0) (>= sy 0) (>= x 0) (>= y 0) (>= width 0) (>= height 0)
-               (<= (+ sx width) (image-width src-img)) (<= (+ sy height) (image-height src-img))
-               (<= (+ x width) (image-width dst-img)) (<= (+ y height) (image-height dst-img))))
-  (call-next-method src-img (round sx) (round sy) (round width) (round height)
-                    dst-img (round x) (round y) :alpha (round alpha)))
+  (with-copy-image-bounds (src-img sx sy width height dst-img x y)
+    (call-next-method src-img sx sy width height dst-img x y :alpha (round alpha))
+    (make-rectangle* x y (+ x width) (+ y height))))
+
+(declaim (inline %call-image-blend-fn))
+(defun %call-image-blend-fn (src-image-type dst-image-type get-fn blend-fn x y salpha)
+  (declare (type fixnum x y)
+           (type octet salpha)
+           (type symbol src-image-type dst-image-type))
+  (case dst-image-type
+    (:rgba
+     (let ()
+       (declare (type image-rgba-blend-fn blend-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (setf alpha (octet-mult salpha alpha))
+         (when (> alpha *alpha-epsilon*)
+           (funcall blend-fn x y red green blue alpha)))))
+    (:rgb
+     (let ()
+       (declare (type image-rgb-blend-fn blend-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (setf alpha (octet-mult salpha alpha))
+         (when (> alpha *alpha-epsilon*)
+           (funcall blend-fn x y red green blue alpha)))))
+    (:gray
+     (let ()
+       (declare (type image-gray-blend-fn blend-fn))
+       (multiple-value-bind (red green blue alpha)
+           (%call-image-rgba-get-fn src-image-type get-fn x y)
+         (setf alpha (octet-mult salpha alpha)) 
+         (when (> alpha *alpha-epsilon*)
+           (funcall blend-fn x y (rgb->gray red green blue) alpha)))))))
 
 (defmethod blend-image ((src-img image-mixin) sx sy width height
                         (dst-img image-mixin) x y &key (alpha 255))
@@ -108,12 +159,8 @@
 ;;;
 (defmethod copy-alpha-channel :around ((src-img image-mixin) sx sy width height
                                        (dst-img image-mixin) x y)
-  (assert (and (>= sx 0) (>= sy 0) (>= x 0) (>= y 0) (>= width 0) (>= height 0)
-               (<= (+ sx width) (image-width src-img)) (<= (+ sy height) (image-height src-img))
-               (<= (+ x width) (image-width dst-img)) (<= (+ y height) (image-height dst-img))))
-  ;; TO FIX ROUNDING
-  (call-next-method src-img (round sx) (round sy) (round width) (round height)
-                    dst-img (round x) (round y)))
+  (with-copy-image-bounds (src-img sx sy width height dst-img x y)
+    (call-next-method src-img sx sy width height dst-img x y)))
 
 (defmethod copy-alpha-channel ((src-img image-mixin) sx sy width height
                                (dst-img image-mixin) x y)
@@ -173,16 +220,53 @@
       (error "image format not supproted, yet")))
 
 ;;;
+;;; set color
+;;;
+
+(defmethod set-image-color :around (image red green blue &key (alpha 255) (x 0) (y 0)
+                                                           (width (image-width image))
+                                                           (height (image-height image)))
+  (declare (type octet red green blue alpha))
+  (with-set-image-bounds (image x y width height)
+    (call-next-method image red green blue :alpha alpha
+                      :x x :y y :width width :height height))
+  (make-rectangle* x y (+ x width) (+ y height)))
+
+(defmethod set-image-color ((image image-mixin) red green blue &key alpha x y width height)
+  (declare (type fixnum x y width height))
+  (let ((set-span-fn (%image-set-span-fn image))
+        (image-type (image-type image)))
+    (let ((max-x (+ x width -1))
+          (max-y (+ y height -1)))
+      (declare (type fixnum max-x max-y))
+      (%call-set-image-span-fn image-type set-span-fn
+                               x y max-x max-y red green blue alpha))))
+
+;;;
 ;;; set
 ;;;
 (defmethod set-image :around ((image image-mixin) design
                                &key (x 0) (y 0)
                                  (width (image-width image))
                                  (height (image-height image)))
-  ;; TO FIX ROUNDING
-  (call-next-method image design :x (round x) :y (round y)
-                    :width (round width) :height (round height))
-  (make-rectangle* (round x) (round y) (round (+ x width)) (round (+ y height))))
+  (with-set-image-bounds (image x y width height)
+    (call-next-method image design :x x :y y
+                      :width width :height height)
+    (make-rectangle* x y (+ x width) (+ y height))))
+
+(defmethod set-image :around ((image image-mixin) (design pixeled-uniform-design)
+                              &key (x 0) (y 0)
+                                (width (image-width image))
+                                (height (image-height image)))
+  (if (region-equal (pixeled-design-region design) +everywhere+)
+      (multiple-value-bind (red green blue alpha)
+          (values
+           (pixeled-uniform-design-red design)
+           (pixeled-uniform-design-green design)
+           (pixeled-uniform-design-blue design)
+           (pixeled-uniform-design-alpha design))
+        (set-image-color image red green blue :alpha alpha :x x :y y :width width :height height))
+      (call-next-method)))
 
 (defmethod set-image ((image image-mixin) design &key x y width height)
   (declare (type fixnum x y width height))
@@ -190,45 +274,50 @@
         (image-type (image-type image)))
     (let ((src-fn (pixeled-design-rgba-get-fn design)))
       (declare (type pixeled-design-fn src-fn))
-      (let ((max-x (+ x width -1))
-            (max-y (+ y height -1)))
-        (declare (type fixnum max-x max-y))
-        (loop for j-var from y to max-y do
-             (loop for i-var from x to max-x do
-                  (multiple-value-bind (red green blue alpha)
-                      (funcall src-fn i-var j-var)
-                    (%call-set-image-fn image-type set-fn 
-                                        i-var j-var red green blue alpha))))))))
+      (do-image image x y width height (i j)
+        (multiple-value-bind (red green blue alpha)
+            (funcall src-fn i j)
+          (%call-set-image-fn image-type set-fn 
+                              i j red green blue alpha))))))
 
-(defmethod set-image ((image image-mixin) (design pixeled-uniform-design)
-                       &key x y width height)
-  (declare (type fixnum x y width height))
-  (let ((set-fn (%image-set-fn image))
-        (set-span-fn (%image-set-span-fn image))
+;;;
+;;; fill color
+;;;
+
+(defmethod fill-image-color :around (image red green blue stencil
+                                     &key (alpha 255) (x 0) (y 0)
+                                       (width (image-width image))
+                                       (height (image-height image))
+                                       (stencil-dx 0) (stencil-dy 0))
+  (declare (type octet red green blue alpha))
+  (with-fill-image-bounds (image x y width height stencil stencil-dx stencil-dy)
+    (call-next-method image red green blue stencil :alpha alpha :x x :y y
+                      :width width :height height :stencil-dx stencil-dx :stencil-dy stencil-dy)
+    (make-rectangle* x y (+ x width) (+ y height))))
+
+(defmethod fill-image-color ((image image-mixin) red green blue (stencil (eql nil))
+                             &key alpha x y width height stencil-dx stencil-dy)
+  (declare (type fixnum x y width height)
+           (ignore stencil stencil-dx stencil-dy))
+  (let ((blend-span-fn (%image-blend-span-fn image))
         (image-type (image-type image)))
-    (let* ((test-region-p (not (region-equal (pixeled-design-region design) +everywhere+)))
-           (src-fn (if test-region-p
-                       (pixeled-design-rgba-get-fn design)
-                       (lambda (x y) (declare (ignore x y)) (values 0 0 0 0)))))
-      (declare (type pixeled-design-fn src-fn))
-      (multiple-value-bind (red green blue alpha)
-          (values
-           (pixeled-uniform-design-red design)
-           (pixeled-uniform-design-green design)
-           (pixeled-uniform-design-blue design)
-           (pixeled-uniform-design-alpha design))
-        (let ((max-x (+ x width -1))
-              (max-y (+ y height -1)))
-          (declare (type fixnum max-x max-y))
-          (if test-region-p
-              (loop for j-var from y to max-y do
-                   (loop for i-var from x to max-x do
-                        (multiple-value-bind (r g b a)
-                            (funcall src-fn i-var j-var)
-                          (%call-set-image-fn image-type set-fn
-                                              i-var j-var r g b a))))
-              (%call-set-image-span-fn image-type set-span-fn
-                                       x y max-x max-y red green blue alpha)))))))
+    (let ((max-x (+ x width -1))
+          (max-y (+ y height -1)))
+      (declare (type fixnum max-x max-y))
+      (%call-blend-image-span-fn image-type blend-span-fn x y max-x max-y red green blue alpha))))
+
+(defmethod fill-image-color ((image image-mixin) red green blue stencil
+                             &key alpha x y width height stencil-dx stencil-dy)
+  (declare (type fixnum x y width height))
+  (let ((blend-fn (%image-blend-fn image))
+        (image-type (image-type image))
+        (stencil-fn (image-alpha-get-fn stencil :dx stencil-dx :dy stencil-dy)))
+    (declare (type image-alpha-get-fn stencil-fn))
+    (do-image image x y width height (i j)
+      (let ((salpha (funcall stencil-fn i j)))
+        (setf salpha (octet-mult salpha alpha))
+        (%call-blend-image-fn image-type blend-fn 
+                              i j red green blue salpha)))))
 
 ;;;
 ;;; fill
@@ -238,89 +327,56 @@
                                  (width (image-width image))
                                  (height (image-height image))
                                  (stencil-dx 0) (stencil-dy 0))
-  ;; TO FIX ROUNDING
-  (call-next-method image design stencil :x (round x) :y (round y)
-                    :width (round width) :height (round height)
-                    :stencil-dx (and stencil-dx (round stencil-dx))
-                    :stencil-dy (and stencil-dy (round stencil-dy)))
-  (make-rectangle* (round x) (round y) (round (+ x width)) (round (+ y height))))
+    (with-fill-image-bounds (image x y width height stencil stencil-dx stencil-dy)
+      (call-next-method image design stencil :x x :y y
+                        :width width :height height
+                        :stencil-dx stencil-dx
+                        :stencil-dy stencil-dy)
+      (make-rectangle* x y (+ x width) (+ y height))))
 
-(defmethod fill-image ((image image-mixin) design stencil
-                       &key x y width height stencil-dx stencil-dy)
-  (declare (type fixnum x y width height))
-  (let ((blend-fn (%image-blend-fn image))
-        (image-type (image-type image)))
-    (let ((src-fn (pixeled-design-rgba-get-fn design))
-          (stencil-fn (if stencil
-                          (image-alpha-get-fn stencil :dx stencil-dx :dy stencil-dy)
-                          (lambda (x y) (declare (ignore x y)) 255))))
-      (declare (type image-alpha-get-fn stencil-fn)
-               (type pixeled-design-fn src-fn))
-      (let ((max-x (+ x width -1))
-            (max-y (+ y height -1)))
-        (declare (type fixnum max-x max-y))
-        (if stencil
-            (loop for j-var from y to max-y do
-                 (loop for i-var from x to max-x do
-                      (multiple-value-bind (red green blue alpha)
-                          (funcall src-fn i-var j-var)
-                        (let ((salpha (funcall stencil-fn i-var j-var)))
-                          (setf salpha (octet-mult salpha alpha))
-                          (%call-fill-image-fn image-type blend-fn 
-                                          i-var j-var red green blue salpha)))))
-            (loop for j-var from y to max-y do
-                 (loop for i-var from x to max-x do
-                      (multiple-value-bind (red green blue alpha)
-                          (funcall src-fn i-var j-var)
-                        (%call-fill-image-fn image-type blend-fn 
-                                        i-var j-var red green blue alpha)))))))))
-
-(defmethod fill-image ((image image-mixin) (design pixeled-uniform-design) stencil
-                       &key x y width height stencil-dx stencil-dy)
-  (declare (type fixnum x y width height))
-  (let ((blend-fn (%image-blend-fn image))
-        (blend-span-fn (%image-blend-span-fn image))
-        (image-type (image-type image)))
-    (let* ((test-region-p (not (region-equal (pixeled-design-region design) +everywhere+)))
-           (src-fn (if test-region-p
-                       (pixeled-design-rgba-get-fn design)
-                       (lambda (x y) (declare (ignore x y)) (values 0 0 0 0))))
-           (stencil-fn (if stencil
-                           (image-alpha-get-fn stencil :dx stencil-dx :dy stencil-dy)
-                           (lambda (x y) (declare (ignore x y)) 255))))
-      (declare (type image-alpha-get-fn stencil-fn)
-               (type pixeled-design-fn src-fn))
+(defmethod fill-image :around ((image image-mixin) (design pixeled-uniform-design)
+                               stencil &key (x 0) (y 0)
+                                         (width (image-width image))
+                                         (height (image-height image))
+                                         (stencil-dx 0) (stencil-dy 0))
+  (if (region-equal (pixeled-design-region design) +everywhere+)
       (multiple-value-bind (red green blue alpha)
           (values
            (pixeled-uniform-design-red design)
            (pixeled-uniform-design-green design)
            (pixeled-uniform-design-blue design)
            (pixeled-uniform-design-alpha design))
-        (let ((max-x (+ x width -1))
-              (max-y (+ y height -1)))
-          (declare (type fixnum max-x max-y))
-          (if test-region-p
-              (loop for j-var from y to max-y do
-                   (loop for i-var from x to max-x do
-                        (let ((salpha (if stencil
-                                          (funcall stencil-fn i-var j-var)
-                                          255)))
-                          (multiple-value-bind (r g b a)
-                              (funcall src-fn i-var j-var)
-                            (setf red r
-                                  green g
-                                  blue b
-                                  alpha a))
-                          (setf salpha (octet-mult salpha alpha))
-                          (%call-fill-image-fn image-type blend-fn
-                                          i-var j-var red green blue salpha))))
-              (if stencil
-                  (loop for j-var from y to max-y do
-                       (loop for i-var from x to max-x do
-                            (let ((salpha (funcall stencil-fn i-var j-var)))
-                              (declare (type octet alpha salpha))
-                              (setf salpha (octet-mult salpha alpha))
-                              (%call-fill-image-fn image-type blend-fn 
-                                              i-var j-var red green blue salpha))))
-                  (%call-fill-image-span-fn image-type blend-span-fn
-                                       x y max-x max-y red green blue alpha))))))))
+        (fill-image-color image red green blue stencil :alpha alpha :x x :y y
+                          :width width :height height :stencil-dx stencil-dx :stencil-dy stencil-dy))
+      (call-next-method)))
+
+(defmethod fill-image ((image image-mixin) design (stencil (eql nil))
+                       &key x y width height stencil-dx stencil-dy)
+  (declare (type fixnum x y width height)
+           (ignore stencil stencil-dx stencil-dy))
+  (let ((blend-fn (%image-blend-fn image))
+        (image-type (image-type image))
+        (src-fn (pixeled-design-rgba-get-fn design)))
+    (declare (type pixeled-design-fn src-fn))
+    (do-image image x y width height (i j)
+      (multiple-value-bind (red green blue alpha)
+          (funcall src-fn i j)
+        (%call-blend-image-fn image-type blend-fn 
+                              i j red green blue alpha)))))
+
+(defmethod fill-image ((image image-mixin) design stencil
+                       &key x y width height stencil-dx stencil-dy)
+  (declare (type fixnum x y width height))
+  (let ((blend-fn (%image-blend-fn image))
+        (image-type (image-type image))
+        (src-fn (pixeled-design-rgba-get-fn design))
+        (stencil-fn (image-alpha-get-fn stencil :dx stencil-dx :dy stencil-dy)))
+    (declare (type image-alpha-get-fn stencil-fn)
+             (type pixeled-design-fn src-fn))
+    (do-image image x y width height (i j)
+      (multiple-value-bind (red green blue alpha)
+          (funcall src-fn i j)
+        (let ((salpha (funcall stencil-fn i j)))
+          (setf salpha (octet-mult salpha alpha))
+          (%call-blend-image-fn image-type blend-fn 
+                                i j red green blue salpha))))))

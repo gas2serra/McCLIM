@@ -199,7 +199,7 @@ span."
             (%aa-scanline-sweep scanline function function-span :start x1 :end x2)
           (setf x-min (min x-min xa))
           (setf x-max (max x-max xb)))))
-    (make-rectangle* x-min y-min (1+ x-max) (1+ y-max))))
+    (make-rectangle* x-min y-min x-max y-max)))
 
 (declaim (inline aa-line-f))
 (defun aa-line-f (state mxx mxy myx myy tx ty x1 y1 x2 y2)
