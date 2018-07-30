@@ -36,7 +36,9 @@
 
 (defmethod render-fill-image ((render image-render) image design stencil
                               &key x y width height (stencil-dx 0) (stencil-dy 0))
-  ;;(format *debug-io* "render: fill image (stencil ~A)~%" (not (null stencil)))
+  (format *debug-io* "render: fill image (stencil ~A) ~A ~%~A~%" (not (null stencil))
+          (render-transformation render)
+          (render-clip-region render))
   (fill-image image design stencil
               :x x :y y :width width :height height :stencil-dx stencil-dx :stencil-dy stencil-dy))
 

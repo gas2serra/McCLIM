@@ -123,5 +123,5 @@ span."
             (%aa-scanline-sweep scanline function function-span :start x1 :end x2)
           (setf x-min (min x-min xa))
           (setf x-max (max x-max xb)))))
-    (make-rectangle* x-min y-min x-max y-max)))
+    (make-rectangle* x-min y-min (1+ x-max) (1+ y-max))))
 
