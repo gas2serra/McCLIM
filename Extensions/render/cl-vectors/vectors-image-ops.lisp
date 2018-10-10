@@ -248,7 +248,7 @@
          (pixeled-uniform-design-blue pixeled-design)
          (pixeled-uniform-design-alpha pixeled-design))
       (declare (type octet red green blue a))
-      (format *debug-io* "-------------------~%")
+      #+nil (format *debug-io* "-------------------~%")
       (lambda ()
         (do ()
             ((or (eql status :val)
