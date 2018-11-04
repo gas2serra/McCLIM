@@ -1289,8 +1289,14 @@
    #:sheet-translation-mixin            ;class
    #:sheet-viewable-p                   ;generic function
    #:sheet-with-medium-mixin            ;class
+   #:sheet-translation-transformation-mixin ;class
    #:sheet-y-inverting-transformation-mixin ;class
    #:sheetp                             ;predicate
+   #:sheet-already-has-parent           ;condition
+   #:sheet-supports-only-one-child      ;condition
+   #:sheet-is-not-child                 ;condition
+   #:sheet-ordering-underspecified      ;condition
+   #:sheet-is-not-ancestor              ;condition
    #:shrink-frame                       ;generic function
    #:simple-completion-error            ;condition
    #:simple-parse-error                 ;error

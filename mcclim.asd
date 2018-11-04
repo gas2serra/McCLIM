@@ -91,3 +91,15 @@ interface management system."
 ;; This feature is notably used by ESA and DREI, in cases where they need to
 ;; know whether they are compiled with McCLIM or another CLIM implementation.
 (pushnew :mcclim *features*) 
+
+
+(defsystem :mcclim/test
+  :author "Alessandro Serra"
+  :license "LGPL-2.1+"
+  :version "0.1.0"
+  :depends-on (:fiveam :mcclim)
+  :pathname "t/"
+  :components ((:file "sheet-tests"))
+  :perform (test-op (o c) (symbol-call :5am :run!
+                                       (intern #.(string :sheet-suite)
+                                               :it.bese.fiveam))))

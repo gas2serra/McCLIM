@@ -132,6 +132,10 @@
 
 (define-condition sheet-is-not-child (error) ())
 
+(defmethod sheet-disown-child ((sheet basic-sheet) (child sheet) &key (errorp t))
+  (declare (ignore errorp))
+  (error "~S attempting to disown ~S" sheet child))
+
 (defmethod sheet-disown-child :before
     ((sheet basic-sheet) (child sheet) &key (errorp t))
   (when (and (not (member child (sheet-children sheet))) errorp)
@@ -180,13 +184,18 @@
        (sheet-viewable-p (sheet-parent sheet))))
 
 (defmethod sheet-occluding-sheets ((sheet basic-sheet) (child sheet))
-  (labels ((fun (l)
-		(cond ((eq (car l) child) '())
-		      ((and (sheet-enabled-p (car l))
-                            (region-intersects-region-p
-                             (sheet-region (car l)) (sheet-region child)))
-		       (cons (car l) (fun (cdr l))))
-		      (t (fun (cdr l))))))
+  (labels ((map-sheet-region-to-parent (sheet)
+             (transform-region (sheet-transformation sheet)
+                               (sheet-region sheet)))
+           (fun (l)
+	     (cond ((eq (car l) child) '())
+		   ((and (sheet-enabled-p (car l))
+                         ;; error! regions must mapped to parent coordinates!
+                         (region-intersects-region-p
+                          (map-sheet-region-to-parent (car l))
+                          (map-sheet-region-to-parent child)))
+		    (cons (car l) (fun (cdr l))))
+		   (t (fun (cdr l))))))
     (fun (sheet-children sheet))))
 
 (defmethod map-over-sheets (function (sheet basic-sheet))
@@ -517,7 +526,7 @@
 (define-condition sheet-is-ancestor (error) ())
 
 (defmethod sheet-adopt-child :before (sheet (child sheet-parent-mixin))
-  (when (and (sheet-parent child) (not (eq sheet (sheet-parent child))))
+  (when (sheet-parent child)
     (error 'sheet-already-has-parent))
   (when (sheet-ancestor-p sheet child)
     (error 'sheet-is-ancestor)))
