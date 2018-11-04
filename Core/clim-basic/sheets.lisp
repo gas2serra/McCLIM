@@ -87,7 +87,7 @@
 ;;;;
 ;;;; sheet protocol class
 
-(defclass basic-sheet (sheet)
+(defclass basic-sheet (sheet-mixin sheet)
   ((region :type region
 	   :initarg :region
 	   :initform (make-bounding-rectangle 0 0 100 100)
@@ -107,10 +107,7 @@
    (pointer-cursor :accessor sheet-pointer-cursor
                    :initarg  :pointer-cursor
                    :initform :default)
-   (enabled-p :type boolean
-	      :initarg :enabled-p
-              :initform t
-              :accessor sheet-enabled-p)))
+   ))
 
 ;;; Native region is volatile, and is only computed at the first
 ;;; request when it's equal to nil.
@@ -205,15 +202,10 @@
            (map-over-sheets function child))
        sheets))
 
-(defmethod (setf sheet-enabled-p) :around (enabled-p (sheet basic-sheet))
-  (unless (eql enabled-p (sheet-enabled-p sheet))
-    (call-next-method)
-    (if enabled-p
-        (note-sheet-enabled sheet)
-        (note-sheet-disabled sheet))
-    (dispatch-repaint (sheet-parent sheet)
-                      (transform-region (sheet-transformation sheet)
-                                        (sheet-region sheet)))))
+(defmethod (setf sheet-enabled-p) :after (enabled-p (sheet basic-sheet))
+  (dispatch-repaint (sheet-parent sheet)
+                    (transform-region (sheet-transformation sheet)
+                                      (sheet-region sheet))))
 
 (defmethod (setf sheet-region) :around (region (sheet basic-sheet))
   (unless (region-equal region (sheet-region sheet))
@@ -392,14 +384,6 @@
   nil)
 
 (defmethod note-sheet-disowned ((sheet basic-sheet))
-  (declare (ignorable sheet))
-  nil)
-
-(defmethod note-sheet-enabled ((sheet basic-sheet))
-  (declare (ignorable sheet))
-  nil)
-
-(defmethod note-sheet-disabled ((sheet basic-sheet))
   (declare (ignorable sheet))
   nil)
 
