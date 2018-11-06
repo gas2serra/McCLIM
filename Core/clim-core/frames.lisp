@@ -263,9 +263,23 @@ documentation produced by presentations.")
   (declare (ignore fm))
   (sheet-adopt-child (frame-top-level-sheet frame) (frame-panes frame))
   (unless (sheet-parent (frame-top-level-sheet frame))
+    (multiple-value-bind (w h x y) (frame-geometry* frame)
+      (declare (ignore x y))
+      ;; automatically generates a window-configuation-event
+      ;; which then calls allocate-space
+      ;;
+      ;; Not any longer, we turn off CONFIGURE-NOTIFY events until the
+      ;; window is mapped and do the space allocation now, so that all
+      ;; sheets will have their correct geometry at once. --GB
+      (change-space-requirements (frame-top-level-sheet frame) :width w :height h
+			         :resize-frame t)
+      (setf (sheet-region (frame-top-level-sheet frame))
+	    (make-bounding-rectangle 0 0 w h))
+      (allocate-space (frame-top-level-sheet frame) w h) )
+    
     (sheet-adopt-child (graft frame) (frame-top-level-sheet frame)))
   ;; Find the size of the new frame
-  (multiple-value-bind (w h x y) (frame-geometry* frame)
+  #+nil (multiple-value-bind (w h x y) (frame-geometry* frame)
     (declare (ignore x y))
     ;; automatically generates a window-configuation-event
     ;; which then calls allocate-space
@@ -1012,9 +1026,6 @@ frames and will not have focus.
 			     :enabled-p nil)))
     (setf (slot-value frame 'top-level-sheet) t-l-s)
     (sheet-adopt-child t-l-s (frame-panes frame))
-    (let ((graft (find-graft :port (port fm))))
-      (sheet-adopt-child graft t-l-s)
-      (setf (graft frame) graft))
     (let ((pre-space (compose-space t-l-s))
           (frame-min-width (slot-value frame 'min-width)))
       (multiple-value-bind (width min-width max-width height min-height max-height)
@@ -1029,13 +1040,20 @@ frames and will not have focus.
             (allocate-space (frame-panes frame)
                             (space-requirement-width space)
                             (space-requirement-height space))
-            (setf (sheet-region t-l-s)
+            (allocate-space t-l-s  (space-requirement-width space) (space-requirement-height space))
+            #+nil(setf (sheet-region t-l-s)
                   (make-bounding-rectangle 0 0
                                            (space-requirement-width space)
-                                           (space-requirement-height space))))
-          (setf (sheet-transformation t-l-s)
-                (make-translation-transformation (slot-value frame 'left)
-                                                 (slot-value frame 'top))))))))
+                                           (space-requirement-height space)))
+            (setf (sheet-transformation t-l-s)
+                  (make-translation-transformation (slot-value frame 'left)
+                                                   (slot-value frame 'top)))))))
+    (let ((graft (find-graft :port (port fm))))
+      (sheet-adopt-child graft t-l-s)
+      (setf (graft frame) graft))))
+
+      
+
 
 (defmethod disown-frame ((fm frame-manager) (frame menu-frame))
   (setf (slot-value fm 'frames) (remove frame (slot-value fm 'frames)))

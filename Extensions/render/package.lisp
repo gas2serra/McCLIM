@@ -77,8 +77,8 @@
                 #:coordinate=
                 #:if-supplied
                 ;; backend
-                #:destroy-mirror
-                #:realize-mirror
+                #:port-destroy-mirror
+                #:port-realize-mirror
                 #:mirrored-pixmap
                 #:port-register-mirror
                 #:port-lookup-mirror

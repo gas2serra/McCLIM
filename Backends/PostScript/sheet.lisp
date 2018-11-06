@@ -173,10 +173,10 @@
 (defmethod sheet-mirror ((sheet postscript-stream))
   (sheet-direct-mirror sheet))
 
-(defmethod realize-mirror ((port postscript-port) (sheet postscript-stream))
+(defmethod port-realize-mirror ((port postscript-port) (sheet postscript-stream))
   (sheet-direct-mirror sheet))
 
-(defmethod destroy-mirror ((port postscript-port) (sheet postscript-stream))
+(defmethod port-destroy-mirror ((port postscript-port) (sheet postscript-stream))
   (error "Can't destroy mirror for the postscript stream ~S." sheet))
 
 ;;; Some strange functions

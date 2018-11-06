@@ -75,7 +75,7 @@
 	       (sheet-pointer-cursor pointer-sheet)))
 	  (unless (eql (port-lookup-current-pointer-cursor port (event-sheet event))
 		       pointer-cursor)
-	    (set-sheet-pointer-cursor port (event-sheet event) pointer-cursor))))
+	    (port-set-sheet-pointer-cursor port (event-sheet event) pointer-cursor))))
       (unless (or (typep event 'pointer-enter-event)
 		  (typep event 'pointer-exit-event))
 	(cond

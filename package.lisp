@@ -1174,7 +1174,7 @@
    #:read-gesture                       ;function
    #:read-token                         ;function
    #:real                               ;presentation type
-   #:realize-mirror                     ;generic function
+   #:port-realize-mirror                     ;generic function
    #:recompute-contents-ok              ;generic function
    #:recompute-extent-for-changed-child ;generic function
    #:recompute-extent-for-new-child     ;generic function
@@ -1289,8 +1289,14 @@
    #:sheet-translation-mixin            ;class
    #:sheet-viewable-p                   ;generic function
    #:sheet-with-medium-mixin            ;class
+   #:sheet-translation-transformation-mixin ;class
    #:sheet-y-inverting-transformation-mixin ;class
    #:sheetp                             ;predicate
+   #:sheet-already-has-parent           ;condition
+   #:sheet-supports-only-one-child      ;condition
+   #:sheet-is-not-child                 ;condition
+   #:sheet-ordering-underspecified      ;condition
+   #:sheet-is-not-ancestor              ;condition
    #:shrink-frame                       ;generic function
    #:simple-completion-error            ;condition
    #:simple-parse-error                 ;error
@@ -1983,13 +1989,13 @@
    #:port-set-mirror-transformation
    #:port-ungrab-pointer
    #:queue-callback
-   #:set-sheet-pointer-cursor
+   #:port-set-sheet-pointer-cursor
    #:synthesize-pointer-motion-event
    #:text-style-character-width
    ;; From CLIM (mentioned in the spec)
    #:adopt-frame
    #:allocate-space
-   #:destroy-mirror
+   #:port-destroy-mirror
    #:destroy-port
    #:graft
    #:graft-height
@@ -2019,7 +2025,7 @@
    #:pointer-button-state
    #:pointer-modifier-state
    #:pointer-position
-   #:realize-mirror
+   #:port-realize-mirror
    #:text-size
    #:text-style-ascent
    #:text-style-descent

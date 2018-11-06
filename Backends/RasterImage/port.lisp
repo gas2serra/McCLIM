@@ -25,8 +25,8 @@
 
 (defun %destroy-all-mirrors (port)
   (maphash #'(lambda (key val)
-	       (port-unregister-mirror port key val)
-	       (destroy-mirror port key))
+	       #+nil(port-unregister-mirror port key val)
+	       (port-destroy-mirror port key))
 	   (slot-value port 'climi::sheet->mirror)))
 
 (defmethod destroy-port :before ((port raster-image-port))
@@ -57,7 +57,7 @@
 (defmethod graft ((port raster-image-port))
   (first (port-grafts port)))
 
-(defmethod destroy-mirror ((port raster-image-port) sheet)
+(defmethod port-destroy-mirror ((port raster-image-port) sheet)
   (declare (ignore port sheet))
   nil)
 

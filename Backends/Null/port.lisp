@@ -57,10 +57,10 @@
     ((port null-port) mirror mirror-transformation)
   ())
 
-(defmethod realize-mirror ((port null-port) (sheet mirrored-sheet-mixin))
+(defmethod port-realize-mirror ((port null-port) (sheet mirrored-sheet-mixin))
   nil)
 
-(defmethod destroy-mirror ((port null-port) (sheet mirrored-sheet-mixin))
+(defmethod port-destroy-mirror ((port null-port) (sheet mirrored-sheet-mixin))
   ())
 
 (defmethod mirror-transformation ((port null-port) mirror)
@@ -72,7 +72,7 @@
 (defmethod port-disable-sheet ((port null-port) (mirror mirrored-sheet-mixin))
   nil)
 
-(defmethod destroy-port :before ((port null-port))
+(defmethod port-destroy-port :before ((port null-port))
   nil)
 
 (defmethod port-motion-hints ((port null-port) (mirror mirrored-sheet-mixin))
@@ -135,9 +135,7 @@
   nil)
 
 (defmethod port-deallocate-pixmap ((port null-port) pixmap)
-  #+nil
-  (when (port-lookup-mirror port pixmap)
-    (destroy-mirror port pixmap)))
+  (port-destroy-mirror port pixmap))
 
 (defmethod pointer-position ((pointer null-pointer))
   (values (slot-value pointer 'x) (slot-value pointer 'y)))
@@ -180,7 +178,7 @@
   (declare (ignore event))
   nil)
 
-(defmethod set-sheet-pointer-cursor ((port null-port) sheet cursor)
+(defmethod port-set-sheet-pointer-cursor ((port null-port) sheet cursor)
   (declare (ignore sheet cursor))
   nil)        
 

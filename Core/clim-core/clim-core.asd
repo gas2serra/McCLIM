@@ -24,7 +24,9 @@
    (:file "menu-choose" :depends-on ("commands" "table-formatting" "presentation-defs"
                                      "panes" "frames" "pointer-tracking" "presentations"))
    (:file "menu" :depends-on ("panes" "commands" "gadgets" "presentations" "frames"))
-   (:file "panes" :depends-on ("incremental-redisplay" "presentations" "presentation-defs"
+   (:file "pane-protocols" :depends-on ("incremental-redisplay" "presentations" "presentation-defs"))
+   (:file "pane-core" :depends-on ("pane-protocols" "incremental-redisplay" "presentations" "presentation-defs"))
+   (:file "panes" :depends-on ("pane-protocols" "pane-core" "incremental-redisplay" "presentations" "presentation-defs"
                                "input-editing" "frames"))
    (:file "dialog" :depends-on ("panes" "frames" "incremental-redisplay"
                                 "table-formatting" "presentations"

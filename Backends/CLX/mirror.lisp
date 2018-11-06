@@ -12,10 +12,10 @@
     (setf (xlib:drawable-x mirror) (round-coordinate x)
           (xlib:drawable-y mirror) (round-coordinate y))))
 
-(defmethod destroy-mirror ((port clx-basic-port) (sheet mirrored-sheet-mixin))
+(defmethod port-destroy-mirror ((port clx-basic-port) (sheet mirrored-sheet-mixin))
   (when (sheet-xmirror sheet)
     (xlib:destroy-window (sheet-xmirror sheet)))
-  (when (port-lookup-mirror port sheet)
+  #+nil (when (sheet-direct-mirror sheet)
     (port-unregister-mirror port sheet (sheet-mirror sheet))))
 
 (defmethod raise-mirror ((port clx-basic-port) (sheet basic-sheet))

@@ -98,7 +98,7 @@
                    :title title :for for
                    :orientation orientation
                    :paper device-type
-                   :native-region region
+                   ;;:native-region region
                    :region region
                    :transformation transform)))
 

@@ -18,7 +18,7 @@
   nil)
 
 ;;; realize/destroy mirrors
-(defmethod realize-mirror ((port render-port-mixin) (sheet image-sheet-mixin)))
+(defmethod port-realize-mirror ((port render-port-mixin) (sheet image-sheet-mixin)))
 
 ;;;
 ;;; Fonts

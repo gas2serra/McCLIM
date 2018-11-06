@@ -205,138 +205,10 @@ order to produce a double-click")
   (draw-line* pane x2 y1 x2 y2 :ink ink2))
 
 
-;;; Space Requirements
 
-(defconstant +fill+ (expt 10 (floor (log most-positive-fixnum 10))))
-
-(defclass space-requirement () ())
-
-(defclass standard-space-requirement (space-requirement)
-  ((width      :initform 1
-	       :initarg :width
-	       :reader space-requirement-width)
-   (max-width  :initform 1
-	       :initarg :max-width
-	       :reader space-requirement-max-width)
-   (min-width  :initform 1
-	       :initarg :min-width
-	       :reader space-requirement-min-width)
-   (height     :initform 1
-	       :initarg :height
-	       :reader space-requirement-height)
-   (max-height :initform 1
-	       :initarg :max-height
-	       :reader space-requirement-max-height)
-   (min-height :initform 1
-	       :initarg :min-height
-	       :reader space-requirement-min-height) ) )
-
-(defmethod print-object ((space standard-space-requirement) stream)
-  (with-slots (width height min-width max-width min-height max-height) space
-    (print-unreadable-object (space stream :type t :identity nil)
-      (format stream "width: ~S [~S,~S] height: ~S [~S,~S]"
-              width
-              min-width
-              max-width
-              height
-              min-height
-              max-height))))
-
-(defun make-space-requirement (&key (min-width 0) (min-height 0)
-                                 (width min-width) (height min-height)
-                                 (max-width +fill+) (max-height +fill+))
-  ;; Defensive programming. For instance SPACE-REQUIREMENT-+ may cause
-  ;; max-{width,height} to be (+ +fill+ +fill+), what exceeds our biggest
-  ;; allowed values. We fix that here.
-  (clampf min-width  0 +fill+) (clampf max-width  0 +fill+) (clampf width  min-width  max-width)
-  (clampf min-height 0 +fill+) (clampf max-height 0 +fill+) (clampf height min-height max-height)
-  (assert (<= min-width  max-width)  (min-width  max-width))
-  (assert (<= min-height max-height) (min-height max-height))
-  (make-instance 'standard-space-requirement
-                 :width width
-                 :max-width max-width
-                 :min-width min-width
-                 :height height
-                 :max-height max-height
-                 :min-height min-height))
-
-(defmethod space-requirement-components ((space-req standard-space-requirement))
-  (with-slots (width min-width max-width height min-height max-height) space-req
-    (values width min-width max-width height min-height max-height)))
-
-(defun space-requirement-combine* (function sr1 &key (width 0) (min-width 0) (max-width 0)
-                                                (height 0) (min-height 0) (max-height 0))
-  (apply #'make-space-requirement
-         (mapcan #'(lambda (c1 c2 keyword)
-                     (list keyword (funcall function c1 c2)))
-                 (multiple-value-list (space-requirement-components sr1))
-                 (list width min-width max-width height min-height max-height)
-                 '(:width :min-width :max-width :height :min-height :max-height))))
-
-(defun space-requirement-combine (function sr1 sr2)
-  (multiple-value-bind (width min-width max-width height min-height max-height)
-      (space-requirement-components sr2)
-    (space-requirement-combine* function sr1
-                                :width      width
-                                :min-width  min-width
-                                :max-width  max-width
-                                :height     height
-                                :min-height min-height
-                                :max-height max-height)))
-
-(defun space-requirement+ (sr1 sr2)
-  (space-requirement-combine #'+ sr1 sr2))
-
-(defun space-requirement+* (space-req &key (width 0) (min-width 0) (max-width 0)
-                                           (height 0) (min-height 0) (max-height 0))
-  (space-requirement-combine* #'+ space-req
-                              :width      width
-                              :min-width  min-width
-                              :max-width  max-width
-                              :height     height
-                              :min-height min-height
-                              :max-height max-height))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-(defun spacing-value-p (x)
-  (or (and (realp x) (>= x 0))
-      (and (consp x)
-           (realp (car x))
-           (consp (cdr x))
-           (member (cadr x) '(:point :pixel :mm :character :line))
-           (null (cddr x)))
-      ;; For clim-stream-pane
-      (eq x :compute)))
-)
-
-(deftype spacing-value ()
-  ;; just for documentation
-  `(satisfies spacing-value-p))
 
 ;;; PANES
 
-;; Macros for quick access to space-requirement slots.
-(defmacro sr-width (pane)
-  `(space-requirement-width (pane-space-requirement ,pane)))
-(defmacro sr-height (pane)
-  `(space-requirement-height (pane-space-requirement ,pane)))
-(defmacro sr-max-width (pane)
-  `(space-requirement-max-width (pane-space-requirement ,pane)))
-(defmacro sr-max-height (pane)
-  `(space-requirement-max-height (pane-space-requirement ,pane)))
-(defmacro sr-min-width (pane)
-  `(space-requirement-min-width (pane-space-requirement ,pane)))
-(defmacro sr-min-height (pane)
-  `(space-requirement-min-height (pane-space-requirement ,pane)))
-
-(defclass layout-protocol-mixin ()
-  ((space-requirement :accessor pane-space-requirement
-                      :initform nil
-                      :documentation "The cache of the space requirements of the pane. NIL means: need to recompute.")
-   (current-width     :accessor pane-current-width
-                      :initform nil)
-   (current-height    :accessor pane-current-height
-                      :initform nil) ))
 
 ;;; XXX Move to protocol-classes.lisp. Should this really have all these
 ;;; superclasses?
@@ -482,201 +354,15 @@ order to produce a double-click")
     ;; Actually layout the child
     (move-sheet child child-x child-y)
     (resize-sheet child child-width child-height)
-    (allocate-space child child-width child-height)))
+    #+nil(allocate-space child child-width child-height)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; User Space Requirements
 
-(defclass space-requirement-options-mixin ()
-  ((user-width
-    :initarg  :width
-    :initform nil
-    :reader   pane-user-width
-    :type     (or null spacing-value))
-   (user-min-width
-    :initarg :min-width
-    :initform nil
-    :reader   pane-user-min-width
-    :type     (or null spacing-value))
-   (user-max-width
-    :initarg :max-width
-    :initform nil
-    :reader   pane-user-max-width
-    :type     (or null spacing-value))
-   (user-height
-    :initarg :height
-    :initform nil
-    :reader   pane-user-height
-    :type     (or null spacing-value))
-   (user-min-height
-    :initarg :min-height
-    :initform nil
-    :reader   pane-user-min-height
-    :type     (or null spacing-value))
-   (user-max-height
-    :initarg :max-height
-    :initform nil
-    :reader   pane-user-max-height
-    :type     (or null spacing-value))
-   (x-spacing
-    :initarg :x-spacing
-    :initform 0
-    :reader   pane-x-spacing
-    :type     (or null spacing-value))
-   (y-spacing
-    :initarg :y-spacing
-    :initform 0
-    :reader   pane-y-spacing
-    :type     (or null spacing-value)))
-  (:documentation
-   "Mixin class for panes which offer the standard user space requirements options."))
-
-(defmethod shared-initialize :after ((instance space-requirement-options-mixin)
-                                     (slot-names t)
-                                     &key
-                                     (x-spacing nil x-spacing-p)
-                                     (y-spacing nil y-spacing-p)
-                                     (spacing nil spacing-p))
-  (declare (ignore x-spacing y-spacing))
-  (cond ((not spacing-p))
-        (x-spacing-p
-         (error #1="~@<The initargs ~S and ~S are mutually exclusive~@:>"
-                :spacing :x-spacing))
-        (y-spacing-p
-         (error #1# :spacing :y-spacing))
-        (t
-         (setf (slot-value instance 'x-spacing) spacing
-               (slot-value instance 'y-spacing) spacing))))
-
-(defclass standard-space-requirement-options-mixin (space-requirement-options-mixin)
-  ())
-
-(defgeneric spacing-value-to-device-units (pane x))
-
-(defun merge-one-option
-    (pane foo user-foo user-min-foo user-max-foo min-foo max-foo)
 
 
-  ;; NOTE: The defaulting for :min-foo and :max-foo is different from MAKE-SPACE-REQUIREMENT.
-  ;;       MAKE-SPACE-REQUIREMENT has kind of &key foo (min-foo 0) (max-foo +fill+)
-  ;;       While user space requirements has &key foo (min-foo foo) (max-foo foo).
-  ;;       I as a user would pretty much expect the same behavior, therefore I'll take the
-  ;;       following route:
-  ;;       When the :foo option is given, I'll let MAKE-SPACE-REQUIREMENT decide.
-  ;;
-  ;; old code:
-  ;;
-  ;; ;; Then we resolve defaulting. sec 29.3.1 says:
-  ;; ;; | If either of the :max-width or :min-width options is not
-  ;; ;; | supplied, it defaults to the value of the :width option. If
-  ;; ;; | either of the :max-height or :min-height options is not
-  ;; ;; | supplied, it defaults to the value of the :height option.
-  ;; (setf user-max-foo  (or user-max-foo user-foo)
-  ;;       user-min-foo  (or user-min-foo user-foo))
-  ;;       --GB 2003-01-23
-
-  (when (and (null user-max-foo) (not (null user-foo)))
-    (setf user-max-foo (space-requirement-max-width
-			(make-space-requirement
-			 :width (spacing-value-to-device-units pane foo)))))
-  (when (and (null user-min-foo) (not (null user-foo)))
-    (setf user-min-foo (space-requirement-min-width
-			(make-space-requirement
-			 :width (spacing-value-to-device-units pane foo)))))
-
-  ;; when the user has no idea about the preferred size just take the
-  ;; panes preferred size.
-  (setf user-foo (or user-foo foo))
-  (setf user-foo (spacing-value-to-device-units pane user-foo))
-
-  ;; dito for min/max
-  (setf user-min-foo (or user-min-foo min-foo)
-	user-max-foo (or user-max-foo max-foo))
-
-  ;; | :max-width, :min-width, :max-height, and :min-height can
-  ;; | also be specified as a relative size by supplying a list of
-  ;; | the form (number :relative). In this case, the number
-  ;; | indicates the number of device units that the pane is
-  ;; | willing to stretch or shrink.
-  (labels ((resolve-relative (dimension sign base)
-	     (if (and (consp dimension) (eq (car dimension) :relative))
-		 (+ base (* sign (cadr dimension)))
-		 (spacing-value-to-device-units pane dimension))))
-    (setf user-min-foo (and user-min-foo
-			    (resolve-relative user-min-foo  -1 user-foo))
-	  user-max-foo (and user-max-foo
-			    (resolve-relative user-max-foo  +1 user-foo))))
-
-  ;; Now we have two space requirements which need to be 'merged'.
-  (setf min-foo (clamp user-min-foo min-foo max-foo)
-	max-foo (clamp user-max-foo min-foo max-foo)
-	foo     (clamp user-foo min-foo max-foo))
-  (values foo min-foo max-foo))
-
-(defgeneric merge-user-specified-options (pane sr))
-
-(defmethod merge-user-specified-options ((pane space-requirement-options-mixin)
-					 sr)
-  ;; ### I want proper error checking and in case there is an error we
-  ;;     should just emit a warning and move on. CLIM should not die from
-  ;;     garbage passed in here.
-  (multiple-value-bind (width min-width max-width height min-height max-height)
-		       (space-requirement-components sr)
-    (multiple-value-bind (new-width new-min-width new-max-width)
-	(merge-one-option pane
-			  width
-			  (pane-user-width pane)
-			  (pane-user-min-width pane)
-			  (pane-user-max-width pane)
-			  min-width
-			  max-width)
-      (multiple-value-bind (new-height new-min-height new-max-height)
-	  (merge-one-option pane
-			    height
-			    (pane-user-height pane)
-			    (pane-user-min-height pane)
-			    (pane-user-max-height pane)
-			    min-height
-			    max-height)
-	(make-space-requirement
-	 :width      new-width
-	 :min-width  new-min-width
-	 :max-width  new-max-width
-	 :height     new-height
-	 :min-height new-min-height
-	 :max-height new-max-height)))))
-
-
-(defmethod compose-space :around ((pane space-requirement-options-mixin)
-                                  &key width height)
-  (declare (ignore width height))
-  ;; merge user specified options.
-  (let ((sr (call-next-method)))
-    (unless sr
-      (warn "~S has no idea about its space-requirements." pane)
-      (setf sr (make-space-requirement :width 100 :height 100)))
-    (merge-user-specified-options pane sr)))
-
-(defmethod change-space-requirements :before ((pane space-requirement-options-mixin)
-                                              &key (width :nochange) (min-width :nochange) (max-width :nochange)
-                                                   (height :nochange) (min-height :nochange) (max-height :nochange)
-                                                   (x-spacing :nochange) (y-spacing :nochange)
-                                              &allow-other-keys)
-  (with-slots (user-width user-min-width user-max-width
-               user-height user-min-height user-max-height
-               (user-x-spacing x-spacing)
-               (user-y-spacing y-spacing))
-      pane
-    (unless (eq width      :nochange) (setf user-width      width))
-    (unless (eq min-width  :nochange) (setf user-min-width  min-width))
-    (unless (eq max-width  :nochange) (setf user-max-width  max-width))
-    (unless (eq height     :nochange) (setf user-height     height))
-    (unless (eq min-height :nochange) (setf user-min-height min-height))
-    (unless (eq max-height :nochange) (setf user-max-height max-height))
-    (unless (eq x-spacing  :nochange) (setf user-x-spacing  x-spacing))
-    (unless (eq y-spacing  :nochange) (setf user-y-spacing  y-spacing)) ))
 
 ;;;; LAYOUT-PROTOCOL-MIXIN
 
@@ -701,18 +387,7 @@ order to produce a double-click")
 ;;;
 ;;; --GB 2003-03-16
 
-(defmethod allocate-space :around ((pane layout-protocol-mixin) width height)
-  (setf (pane-current-width pane) width
-	(pane-current-height pane) height)
-  (unless (top-level-sheet-pane-p pane)
-    (resize-sheet pane width height))
-  (call-next-method))
 
-(defmethod compose-space :around ((pane layout-protocol-mixin) &key width height)
-  (declare (ignore width height))
-  (or (pane-space-requirement pane)
-      (setf (pane-space-requirement pane)
-            (call-next-method))))
 
 ;;; changing space requirements
 
@@ -910,7 +585,7 @@ which changed during the current execution of CHANGING-SPACE-REQUIREMENTS.
 
 ;;; TOP-LEVEL-SHEET
 
-(defclass top-level-sheet-pane (single-child-composite-pane)
+(defclass top-level-sheet-pane (top-level-sheet-pane-mixin single-child-composite-pane)
   ()
   (:documentation "For the first pane in the architecture"))
 
@@ -952,9 +627,6 @@ which changed during the current execution of CHANGING-SPACE-REQUIREMENTS.
 		    (clamp width  (sr-min-width pane)  (sr-max-width pane))
 		    (clamp height (sr-min-height pane) (sr-max-height pane)))))
 
-(defmethod note-sheet-region-changed :after ((pane top-level-sheet-pane))
-  (with-bounding-rectangle* (x1 y1 x2 y2) (sheet-region pane)
-    (allocate-space pane (- x2 x1) (- y2 y1))))
 
 (defmethod handle-event ((sheet top-level-sheet-pane)
 			 (event window-configuration-event))
@@ -1003,7 +675,8 @@ which changed during the current execution of CHANGING-SPACE-REQUIREMENTS.
   (let ((w (space-requirement-width (compose-space pane)))
         (h (space-requirement-height (compose-space pane))))
     (resize-sheet pane w h)
-    (allocate-space pane w h) ))
+    ;; no
+    #+nil(allocate-space pane w h) ))
 
 ;;; Now each child (client) of a box-layout pane is described by the
 ;;; following class:
@@ -1825,7 +1498,7 @@ which changed during the current execution of CHANGING-SPACE-REQUIREMENTS.
         ; move-and-resize-sheet does not allocate space for the sheet...
         ; so we do it manually for this case, which may be wrong - CHECKME
         ; if this is the right place, reusing the above calculation might be a good idea
-      (allocate-space child
+      #+nil (allocate-space child
                       (max child-min-width child-width  width)
                       (max child-min-height child-height height)))))
 
@@ -1873,7 +1546,7 @@ which changed during the current execution of CHANGING-SPACE-REQUIREMENTS.
 	 (height (max (bounding-rectangle-height pane)
 		      (space-requirement-height sr))))
     (resize-sheet client width height)
-    (allocate-space client width height)
+    #+nil (allocate-space client width height)
     (scroller-pane/update-scroll-bars (sheet-parent pane))))
 
 

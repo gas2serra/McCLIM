@@ -17,8 +17,8 @@
                 #:+alt-key+
                 ;;
                 #:port-text-style-mappings
-                #:port-lookup-mirror
-                #:port-register-mirror
+                ;;#:port-lookup-mirror
+                ;;#:port-register-mirror
                 #:port-event-process
                 #:port-grafts
 		#:%%sheet-native-transformation
@@ -29,7 +29,7 @@
                 #:get-environment-variable
                 #:pixmap-sheet
                 #:port-lookup-sheet
-                #:port-unregister-mirror
+                ;;#:port-unregister-mirror
 		#:port-pointer-sheet
                 #:map-repeated-sequence
                 #:pixmap-mirror
@@ -67,8 +67,8 @@
 		#:standard-event-port-mixin
 		#:standard-graft
 		#:pointer-grab-sheet
-		#:%sheet-mirror-region
                 #:%sheet-mirror-transformation
+                #:%sheet-mirror-region
 		#:standard-port)
   (:export
    #:clx-port-display

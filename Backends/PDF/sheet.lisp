@@ -119,10 +119,10 @@
 (defmethod sheet-mirror ((sheet clim-pdf-stream))
   (sheet-direct-mirror sheet))
 
-(defmethod realize-mirror ((port pdf-port) (sheet clim-pdf-stream))
+(defmethod port-realize-mirror ((port pdf-port) (sheet clim-pdf-stream))
   (sheet-direct-mirror sheet))
 
-(defmethod destroy-mirror ((port pdf-port) (sheet clim-pdf-stream))
+(defmethod port-destroy-mirror ((port pdf-port) (sheet clim-pdf-stream))
   (error "Can't destroy mirror for the pdf stream ~S." sheet))
 
 ;;; Some strange functions

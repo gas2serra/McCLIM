@@ -44,7 +44,7 @@
 
 (defvar *all-ports* nil)
 
-(defclass basic-port (port)
+(defclass basic-port (port-mixin port)
   ((server-path :initform nil
 		:initarg :server-path
 		:reader port-server-path)
@@ -122,6 +122,7 @@
     (destroy-process (port-event-process port))
     (setf (port-event-process port) nil)))
 
+#|
 (defmethod port-lookup-mirror ((port basic-port) (sheet mirrored-sheet-mixin))
   (gethash sheet (slot-value port 'sheet->mirror)))
 
@@ -130,8 +131,7 @@
 
 (defgeneric port-lookup-sheet (port mirror))
 
-(defmethod port-lookup-sheet ((port basic-port) mirror)
-  (gethash mirror (slot-value port 'mirror->sheet)))
+
 
 (defmethod port-register-mirror
     ((port basic-port) (sheet mirrored-sheet-mixin) mirror)
@@ -147,11 +147,7 @@
   (remhash mirror (slot-value port 'mirror->sheet))
   nil)
 
-(defmethod realize-mirror ((port basic-port) (sheet mirrored-sheet-mixin))
-  (error "Don't know how to realize the mirror of a generic mirrored-sheet"))
-
-(defmethod destroy-mirror ((port basic-port) (sheet mirrored-sheet-mixin))
-  (error "Don't know how to destroy the mirror of a generic mirrored-sheet"))
+|#
 
 (defmethod mirror-transformation ((port basic-port) mirror)
   (declare (ignore mirror))
@@ -228,6 +224,7 @@
 
 ;;; Pixmap
 
+#|
 (defmethod port-lookup-mirror ((port basic-port) (pixmap pixmap))
   (gethash pixmap (slot-value port 'pixmap->mirror)))
 
@@ -247,14 +244,7 @@
   (remhash pixmap (slot-value port 'pixmap->mirror))
   (remhash mirror (slot-value port 'mirror->pixmap))
   nil)
-
-(defmethod realize-mirror ((port basic-port) (pixmap mirrored-pixmap))
-  (declare (ignorable port pixmap))
-  (error "Don't know how to realize the mirror on a generic port"))
-
-(defmethod destroy-mirror ((port basic-port) (pixmap mirrored-pixmap))
-  (declare (ignorable port pixmap))
-  (error "Don't know how to destroy the mirror on a generic port"))
+|#
 
 (defmethod port-allocate-pixmap ((port basic-port) sheet width height)
   (declare (ignore sheet width height))
@@ -285,12 +275,7 @@
   (declare (ignorable port pointer sheet))
   (warn "Port ~A  has not implemented pointer grabbing." port))
 
-(defgeneric set-sheet-pointer-cursor (port sheet cursor)
-  (:documentation "Sets the cursor associated with SHEET. CURSOR is a symbol, as described in the Franz user's guide."))
 
-(defmethod set-sheet-pointer-cursor ((port basic-port) sheet cursor)
-  (declare (ignore sheet cursor))
-  (warn "Port ~A has not implemented sheet pointer cursors." port))
 
 ;;;;
 ;;;; Font listing extension

@@ -8,8 +8,8 @@
 		  #:do-sequence
 		  #:with-transformed-position
 		  #:with-transformed-positions
-		  #:port-register-mirror
-		  #:port-unregister-mirror
+		  ;;#:port-register-mirror
+		  ;;#:port-unregister-mirror
 		  #:port-lookup-sheet
 		  #:destroy-mirror
 		  #:realize-mirror

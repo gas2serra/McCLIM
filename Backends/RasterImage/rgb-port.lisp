@@ -10,10 +10,10 @@
 (setf (get :rgb-image :port-type) 'rgb-image-port)
 (setf (get :rgb-image :server-path-parser) 'parse-raster-image-server-path)
 
-(defmethod realize-mirror ((port rgb-image-port) sheet)
+(defmethod port-realize-mirror ((port rgb-image-port) sheet)
   (setf (sheet-parent sheet) (graft port))
   (let ((mirror (make-instance 'image-mirror-mixin)))
-    (port-register-mirror port sheet mirror)
+    (setf (sheet-direct-mirror sheet) mirror)
     (%make-image mirror sheet)))
 
 ;;;
@@ -31,10 +31,10 @@
 			       :height height
 			       :port port)))
     (when (sheet-grafted-p sheet)
-      (realize-mirror port pixmap))
+      (port-realize-mirror port pixmap))
     pixmap))
 
 (defmethod port-deallocate-pixmap ((port rgb-image-port) pixmap)
-  (when (climi::port-lookup-mirror port pixmap)
-    (destroy-mirror port pixmap)))
+  (when (sheet-direct-mirror pixmap)
+    (port-destroy-mirror port pixmap)))
 

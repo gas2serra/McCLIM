@@ -38,6 +38,7 @@
 
 (defclass mirrored-pixmap (pixmap)
   ((port :initform nil :initarg :port :accessor port)
+   (mirror :initform nil :accessor sheet-direct-mirror)
    (medium :initform nil :accessor pixmap-medium)
    (region :initform nil :accessor sheet-region)))
 
@@ -61,7 +62,8 @@
      (setf region (make-bounding-rectangle 0 0 width height))))
 
 (defmethod pixmap-mirror ((pixmap mirrored-pixmap))
-  (port-lookup-mirror (port pixmap) pixmap))
+  (sheet-direct-mirror pixmap)
+  #+nil(port-lookup-mirror (port pixmap) pixmap))
 
 (defmethod allocate-pixmap ((sheet sheet) width height)
   (port-allocate-pixmap (port sheet) sheet width height))
@@ -90,8 +92,11 @@
     (sheet-device-transformation pixmap)
     (medium-clipping-region (pixmap-medium pixmap)))))
 
+#|
 (defmethod sheet-direct-mirror ((pixmap mirrored-pixmap))
   (port-lookup-mirror (port pixmap) pixmap))
+|#
 
 (defmethod sheet-mirror ((pixmap mirrored-pixmap))
-  (port-lookup-mirror (port pixmap) pixmap))
+  (sheet-direct-mirror pixmap))
+

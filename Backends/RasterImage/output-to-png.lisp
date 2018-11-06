@@ -110,7 +110,7 @@
 	(clim:sheet-adopt-child border-pane stream)
 	 (sheet-adopt-child vbox border-pane)
 	(funcall enter-fn top-level-sheet stream)
-	(realize-mirror port top-level-sheet)
+	(port-realize-mirror port top-level-sheet)
 	(setf (sheet-region top-level-sheet)
 	      (clim:make-rectangle* 0 0 width height))
         (with-output-recording-options (stream :record recording-p :draw t)

@@ -141,7 +141,7 @@
   ;; don't really understand why the use of it is commented out in favor
   ;; of the constant 0.  -- RS 2007-07-22
   (declare (ignore border-width))
-  (when (null (port-lookup-mirror port sheet))
+  (when (null (sheet-direct-mirror sheet))
     ;;(update-mirror-geometry sheet (%%sheet-native-transformation sheet))
     (let* ((desired-color (typecase sheet
                             (permanent-medium-sheet-output-mixin ;; sheet-with-medium-mixin
@@ -193,12 +193,12 @@
                     :background pixel
                     :event-mask (apply #'xlib:make-event-mask
                                        event-mask))))
-      (port-register-mirror (port sheet) sheet window)
+      (setf (sheet-direct-mirror sheet) window)
       (when map
         (xlib:map-window window))))
-  (port-lookup-mirror port sheet))
+  (sheet-direct-mirror sheet))
 
-(defmethod realize-mirror ((port clx-port) (sheet mirrored-sheet-mixin))
+(defmethod port-realize-mirror ((port clx-port) (sheet mirrored-sheet-mixin))
   ;;mirrored-sheet-mixin is always in the top of the Class Precedence List
   (%realize-mirror port sheet))
 
@@ -321,21 +321,21 @@
 
 ;;; Pixmap
 
-(defmethod realize-mirror ((port clx-port) (pixmap pixmap))
-  (when (null (port-lookup-mirror port pixmap))
+(defmethod port-realize-mirror ((port clx-port) (pixmap pixmap))
+  (when (null (sheet-direct-mirror pixmap))
     (let* ((window (sheet-xmirror (pixmap-sheet pixmap)))
 	   (pix (xlib:create-pixmap
 		    :width (round (pixmap-width pixmap))
 		    :height (round (pixmap-height pixmap))
 		    :depth (xlib:drawable-depth window)
 		    :drawable window)))
-      (port-register-mirror port pixmap pix))
+      (setf (sheet-direct-mirror pixmap) pix))
     (values)))
 
-(defmethod destroy-mirror ((port clx-port) (pixmap pixmap))
-  (alexandria:when-let ((mirror (port-lookup-mirror port pixmap)))
+(defmethod port-destroy-mirror ((port clx-port) (pixmap pixmap))
+  (alexandria:when-let ((mirror (sheet-direct-mirror pixmap)))
     (xlib:free-pixmap mirror)
-    (port-unregister-mirror port pixmap mirror)))
+    #+nil (port-unregister-mirror port pixmap mirror)))
 
 (defmethod port-allocate-pixmap ((port clx-port) sheet width height)
   (let ((pixmap (make-instance 'mirrored-pixmap
@@ -344,12 +344,12 @@
 			       :height height
 			       :port port)))
     (when (sheet-grafted-p sheet)
-      (realize-mirror port pixmap))
+      (port-realize-mirror port pixmap))
     pixmap))
 
 (defmethod port-deallocate-pixmap ((port clx-port) pixmap)
-  (when (port-lookup-mirror port pixmap)
-    (destroy-mirror port pixmap)))
+  (when (sheet-direct-mirror pixmap)
+    (port-destroy-mirror port pixmap)))
 
 ;; Top-level-sheet
 

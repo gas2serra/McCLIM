@@ -67,7 +67,7 @@ want to do the same.")
   (labels ((effective-native-region (mirrored-sheet child region)
 	     (if (eq mirrored-sheet child)
                  (transform-region
-                    (%%sheet-native-transformation mirrored-sheet)
+                  (sheet-native-transformation mirrored-sheet)
                     (region-intersection
                      (sheet-region mirrored-sheet)
                      region))
@@ -186,6 +186,29 @@ want to do the same.")
 ;; never repaint the background (only for speed)
 (defclass never-repaint-background-mixin () ())
 
+(defmethod handle-repaint :before ((sheet always-repaint-background-mixin) region)
+  #+jd-test(sleep 0.1)                  ; we repaint whole thing around four times!
+  (when (typep sheet 'never-repaint-background-mixin)
+    (return-from handle-repaint))
+  (labels ((effective-repaint-region (mirrored-sheet sheet region)
+	     (if (eq mirrored-sheet sheet)
+		 (region-intersection (sheet-region mirrored-sheet) region)
+		 (effective-repaint-region mirrored-sheet
+					   (sheet-parent sheet)
+					   (transform-region (sheet-transformation sheet)
+                                                             (region-intersection region
+                                                                                  (sheet-region sheet)))))))
+    (let* ((parent (sheet-mirrored-ancestor sheet))
+           (native-sheet-region (effective-repaint-region parent sheet region)))
+	  (with-sheet-medium (medium parent)
+	    (with-drawing-options (medium :clipping-region native-sheet-region
+					  :ink +red+ ;;(pane-background sheet)
+					  :transformation +identity-transformation+)
+	      (with-bounding-rectangle* (left top right bottom)
+		  native-sheet-region
+		(medium-draw-rectangle* medium left top right bottom t)))))))
+
+#|
 ;;; XXX: check if we can reintroduce with-double-buffering..
 (defmethod handle-repaint :before ((sheet always-repaint-background-mixin) region)
   #+jd-test(sleep 0.1)                  ; we repaint whole thing around four times!
@@ -208,3 +231,4 @@ want to do the same.")
 	      (with-bounding-rectangle* (left top right bottom)
 		  native-sheet-region
 		(medium-draw-rectangle* medium left top right bottom t)))))))
+|#

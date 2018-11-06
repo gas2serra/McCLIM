@@ -20,7 +20,7 @@
 
 (in-package :clim-internals)
 
-(defclass graft (sheet-multiple-child-mixin mirrored-sheet-mixin basic-sheet)
+(defclass graft (sheet-multiple-child-mixin mirrored-sheet-mixin sheet-graft-mixin basic-sheet)
   ((orientation :initform :default
 		:initarg :orientation
 		:reader graft-orientation)
@@ -31,24 +31,15 @@
 
 (defmethod initialize-instance :after ((graft graft) &rest args)
   (declare (ignore args))
-  (port-register-mirror (port graft) graft (slot-value graft 'mirror)))
+  ;;(port-register-mirror (port graft) graft (slot-value graft 'mirror)))
+  )
 
 (defun graftp (x)
   (typep x 'graft))
 
-(defmethod graft ((graft graft))
-  graft)
 
-(defmethod sheet-grafted-p ((sheet basic-sheet))
-  (if (sheet-parent sheet)
-      (sheet-grafted-p (sheet-parent sheet))
-      nil))
 
-(defmethod sheet-grafted-p ((graft graft))
-  t)
 
-(defmethod sheet-viewable-p ((graft graft))
-  (sheet-enabled-p graft))
 
 (defun find-graft (&key (port nil)
 			(server-path *default-server-path*)

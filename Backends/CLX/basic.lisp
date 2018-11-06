@@ -138,7 +138,8 @@
 	    (untransform-position (sheet-delta-transformation sheet mirrored-ancestor) parent-x parent-y)
 	    )))))
 
-(defmethod set-sheet-pointer-cursor ((port clx-basic-port) (sheet mirrored-sheet-mixin) cursor)
+(defmethod port-set-sheet-pointer-cursor ((port clx-basic-port)
+                                          (sheet mirrored-sheet-mixin) cursor)
   (let ((cursor (gethash (or cursor :default) (clx-port-cursor-table port)))
 	(mirror (sheet-direct-xmirror sheet)))
     (when (and cursor

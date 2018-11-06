@@ -64,7 +64,7 @@ region and its clipping pixmap. This is looked up for optimization with region-e
 (defun clx-medium-picture (clx-medium)
   (with-slots (picture) clx-medium
     (or picture
-        (let ((mirror (port-lookup-mirror (port clx-medium) (medium-sheet clx-medium))))
+        (let ((mirror (sheet-direct-mirror (medium-sheet clx-medium))))
           (setf picture (xlib:render-create-picture mirror))))))
 
 
@@ -111,7 +111,7 @@ region and its clipping pixmap. This is looked up for optimization with region-e
 
 (defun line-style-effective-dashes (line-style medium)
   (let ((scale (line-style-scale line-style medium)))
-    (mapcar #'(lambda (dash) (round (* dash scale)))
+    (map 'list #'(lambda (dash) (round (* dash scale)))
             (line-style-dashes line-style))))
 
 (defmethod (setf medium-line-style) :before (line-style (medium clx-medium))
@@ -241,7 +241,7 @@ translated, so they begin at different position than [0,0])."))
 
 (defmethod medium-gcontext :before ((medium clx-medium) ink)
   (let* ((port (port medium))
-         (mirror (port-lookup-mirror port (medium-sheet medium))))
+         (mirror (sheet-mirror (medium-sheet medium))))
     (with-slots (gc) medium
       (unless gc
         (setf gc (xlib:create-gcontext :drawable mirror)
@@ -1092,8 +1092,7 @@ translated, so they begin at different position than [0,0])."))
               (max-x (round-coordinate (max left right)))
               (max-y (round-coordinate (max top bottom))))
           (xlib:draw-rectangle (or (medium-buffer medium)
-                                   (port-lookup-mirror (port medium)
-                                                       (medium-sheet medium)))
+                                   (sheet-mirror (medium-sheet medium)))
                                (medium-gcontext medium (medium-background medium))
                                (max #x-8000 (min #x7fff min-x))
                                (max #x-8000 (min #x7fff min-y))
